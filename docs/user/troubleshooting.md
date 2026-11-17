@@ -33,6 +33,12 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   correction. Record time from opening to first successful interaction, whether
   it repeats on a second opening, and whether keyboard focus responds. Avoid
   repeatedly submitting permission changes while response is delayed.
+- **Desktop stops reacting after a resize, while the report still paints:**
+  a cursor lookup could leave Desktop's own thread asleep until the pointer
+  shape changed again. Move the pointer onto the caption buttons to wake it. No
+  published runtime contains the correction yet; see
+  [cursor evidence](../reference/cursor.md#desktop-frozen-after-a-cursor-change-2026-11-18).
+  Whether the delay in the previous item has the same cause is not established.
 - **Privacy Level or OK does not react in Edit Permissions:** a separate Wayland
   correction requires runtime 0.1.1; the independent serializer correction requires
   the RPM 8 HTML recipe applied to the profile. Synthetic compositor-input
