@@ -21,6 +21,7 @@ depends=('python>=3.12' 'systemd' 'samba' 'desktop-file-utils' 'shared-mime-info
          'freetype2' 'vulkan-icd-loader' 'libxkbcommon' 'gnutls' 'libunwind'
          'libglvnd' 'unixodbc' 'wayland' 'libpulse' 'alsa-lib' 'gstreamer'
          'gst-plugins-base-libs')
+makedepends=('git')
 options=('!strip' '!debug')
 
 _root() {
@@ -34,20 +35,25 @@ check() {
 }
 
 package() {
-    local root data
+    local root data list mode path
     root="$(_root)"
     data="$pkgdir/usr/share/powerbi-linux"
-    install -d "$data"
-    cp -r --no-preserve=mode,ownership "$root"/{src,runtime,connectors,docs,LICENSE,LICENSES,README.md} "$data/"
-    # packaging/arch can hold makepkg's own src/ and pkg/ trees: copy the recipe only.
-    install -d "$data/packaging/arch"
-    find "$root/packaging" -mindepth 1 -maxdepth 1 ! -name arch \
-        -exec cp -r --no-preserve=mode,ownership {} "$data/packaging/" \;
-    cp --no-preserve=mode,ownership "$root/packaging/arch/PKGBUILD" "$data/packaging/arch/"
-    find "$data" -type d -name __pycache__ -prune -exec rm -rf {} +
-    # A checkout on a filesystem without Unix modes must not leak its modes.
-    find "$data" -type d -exec chmod 755 {} +
-    find "$data" -type f -exec chmod 644 {} +
+    list="$srcdir/tracked-files"
+    # Package the files Git tracks, with the modes Git records. An untracked
+    # .env, report or build output in the checkout must not ship, and a
+    # checkout on a filesystem without Unix modes must not leak its modes.
+    git -C "$root" ls-files -s -z -- src runtime connectors docs packaging \
+        LICENSE LICENSES README.md > "$list"
+    [[ -s "$list" ]] || { echo 'Build from a Git checkout of the project' >&2; return 1; }
+    while IFS= read -r -d '' path; do
+        mode="${path%% *}"
+        path="${path#*$'\t'}"
+        case "$mode" in
+            100755) install -Dm755 "$root/$path" "$data/$path" ;;
+            100644) install -Dm644 "$root/$path" "$data/$path" ;;
+            *) echo "Refusing to package $path (Git mode $mode)" >&2; return 1 ;;
+        esac
+    done < "$list"
     install -Dm755 "$root/packaging/pbi-linux" "$pkgdir/usr/bin/pbi-linux"
     install -Dm644 "$root/packaging/powerbi-linux.desktop" "$pkgdir/usr/share/applications/powerbi-linux.desktop"
     install -Dm644 "$root/packaging/powerbi-linux.xml" "$pkgdir/usr/share/mime/packages/powerbi-linux.xml"
