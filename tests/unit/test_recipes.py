@@ -71,6 +71,29 @@ class VersionedRecipeTests(unittest.TestCase):
             for name, expected in inputs.items():
                 self.assertEqual(common.digest(app / name), expected)
 
+    def test_the_two_2159_builds_reject_each_others_files(self):
+        windows = 'Microsoft.PowerBI.Client.Windows.dll'
+        for selected, other in (('ORIGINALS_2159_1231', 'CURRENT_ORIGINALS'), ('CURRENT_ORIGINALS', 'ORIGINALS_2159_1231')):
+            with self.subTest(selected=selected), tempfile.TemporaryDirectory() as directory:
+                prefix = Path(directory)
+                app = prefix / provision.BIN
+                app.mkdir(parents=True)
+                first, second = {}, {}
+                for name in patches.ORIGINALS:
+                    path = app / name
+                    path.write_bytes(('first build ' + name).encode())
+                    first[name] = common.digest(path)
+                    path.write_bytes(('second build ' + name).encode())
+                    second[name] = common.digest(path)
+                # The Desktop assembly of one build beside the other build's files.
+                (app / windows).write_bytes(('first build ' + windows).encode())
+                with patch.object(patches, selected, first), patch.object(patches, other, second):
+                    self.assertIs(patches.originals_for(first[windows]), first)
+                    with self.assertRaisesRegex(common.Error, 'Checksum verification failed'):
+                        patches.install(prefix, Path('/runtime'), prefix / 'log')
+                self.assertEqual(list((prefix / 'powerbi-linux-originals').iterdir()), [])
+                self.assertEqual(common.digest(app / windows), first[windows])
+
     def test_supported_app_version_is_independent_of_runtime_default_recipe(self):
         with tempfile.TemporaryDirectory() as directory:
             runtime = Path(directory)

@@ -12,6 +12,7 @@ ORIGINALS = {
     'msmdsrv.exe': '7975dcb62edd6e53cc16fe808f66dbf0551cb155069138d68080c4bd32e92a1d',
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_ORIGINAL_SHA256,
 }
+# 2.159.883.0. The name dates from when that build was the current one.
 CURRENT_ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': 'b374f445156cea1caf13eabbfc0b03ee8d2179a75039713f0dfc9cad2535c10a',
     'Microsoft.PowerBI.Client.Windows.dll': '5c49618814888815ec3649ad2bf7dcf0209de1b3722d30372c126b3ebaf79938',
