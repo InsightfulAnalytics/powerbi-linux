@@ -38,9 +38,13 @@ package() {
     root="$(_root)"
     data="$pkgdir/usr/share/powerbi-linux"
     install -d "$data"
-    cp -r --no-preserve=mode,ownership "$root"/{src,runtime,connectors,packaging,docs,LICENSE,LICENSES,README.md} "$data/"
+    cp -r --no-preserve=mode,ownership "$root"/{src,runtime,connectors,docs,LICENSE,LICENSES,README.md} "$data/"
+    # packaging/arch can hold makepkg's own src/ and pkg/ trees: copy the recipe only.
+    install -d "$data/packaging/arch"
+    find "$root/packaging" -mindepth 1 -maxdepth 1 ! -name arch \
+        -exec cp -r --no-preserve=mode,ownership {} "$data/packaging/" \;
+    cp --no-preserve=mode,ownership "$root/packaging/arch/PKGBUILD" "$data/packaging/arch/"
     find "$data" -type d -name __pycache__ -prune -exec rm -rf {} +
-    rm -rf "$data/packaging/arch"/{pkg,src} "$data/packaging/arch"/*.pkg.tar.*
     # A checkout on a filesystem without Unix modes must not leak its modes.
     find "$data" -type d -exec chmod 755 {} +
     find "$data" -type f -exec chmod 644 {} +
