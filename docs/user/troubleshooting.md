@@ -39,6 +39,11 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   published runtime contains the correction yet; see
   [cursor evidence](../reference/cursor.md#desktop-frozen-after-a-cursor-change-2026-11-18).
   Whether the delay in the previous item has the same cause is not established.
+- **On Hyprland, Desktop stops reacting after an error or after opening Data
+  source settings:** the dialog opened as a 2 x 2 pixel window. Close that
+  window from the compositor (it is listed by `hyprctl clients`) to get Desktop
+  back. No published runtime contains the correction yet; see
+  [legacy HTML](../reference/legacy-html.md#dialogs-two-pixels-wide-on-hyprland-2026-11-18).
 - **Privacy Level or OK does not react in Edit Permissions:** a separate Wayland
   correction requires runtime 0.1.1; the independent serializer correction requires
   the RPM 8 HTML recipe applied to the profile. Synthetic compositor-input
