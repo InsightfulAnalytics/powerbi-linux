@@ -53,3 +53,5 @@ later Microsoft browser sign-in correction.
 The repeatable check runner and reusable 22-tab Options audit are described in
 [proactive QA](../../docs/development/automated-qa.md). Native suites require a distinct QA
 installation; missing environments are blocked rather than passed.
+
+`cursor-wake.py --probes /path/to/compiled-probes` checks that Desktop's UI thread still answers after a cursor lookup that times out. It needs a disposable session started with `pbi-linux open --diagnostics`, a report open and the desktop pointer resting over the Desktop window; compile `cursor-wake-probe.cs` with the prefix's .NET compiler first. It stops the WebView2 browser process for 400 ms per round, moves only Wine's own cursor and fails when no lookup was logged. See `docs/reference/cursor.md`.
