@@ -6,7 +6,7 @@
   "wine-11.18-jscript-int64.patch": "baa1e7247957c9c7fa0b740066f11b971edae2329a8b667d357dc49935e524f7",
   "wine-11.18-oleaut32-max-date.patch": "293cbc1b75f45a89b897c8c47d4f798b7c55820e28223faece30155e52e6c337",
   "wine-11.18-oledb32-variant.patch": "903661c96a17113a1a6a10d281bfda896c0ea6eb51636299e4ae9b766facf39c",
-  "wine-11.18-queue-masks-after-internal.patch": "13e011d16c35c290c866674351fc5b153782d11df6684fe8beed8fdd655e2bcc",
+  "wine-11.18-queue-masks-after-internal.patch": "e35657c3856c9a6f163c0d4c05b7b68bd3f758130366a21a88f37bb025019928",
   "wine-11.18-secur32-status.patch": "5df39e54380f146405afa3b7aa08df20f306d82871e6417b29bd6f1462e86053",
   "wine-11.18-single-mode-position.patch": "22b49aaf9d68ad62496eb2b68c3cf698503387693e56e5954caffd539c2ed758",
   "wine-11.18-visible-region-race.patch": "8c594ce2cabc488b604fa065efa4ccd046625417917776737d3f29954f64aa22",
