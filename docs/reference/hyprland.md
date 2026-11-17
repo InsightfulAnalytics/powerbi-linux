@@ -77,9 +77,10 @@ passes it through `VariantTimeToSystemTime` and `SystemTimeToVariantTime`. Wine
 rounded 9999-12-31 23:59:59.9999999 up to 1 Jan 10000, then rejected that date.
 The engine reported `An error occurred while parsing the 'StopTime' element`,
 raised an access violation while unwinding, and launched the dump tool, whose
-console is an ordinary window to a tiling compositor. This is not specific to
-Hyprland or to 2.159.1231.0: `msmdsrv.exe` is the same file as in 2.159.883.0.
-A floating window manager shows the console only as a brief flash.
+console is an ordinary window to a tiling compositor. Nothing in this path
+depends on Hyprland or on 2.159.1231.0 (`msmdsrv.exe` is the same file as in
+2.159.883.0), but it was observed on this host only. A floating window manager
+would show the console as a brief flash.
 
 `wine-11.18-oleaut32-max-date.patch` keeps 23:59:59 for the last half second of
 year 9999. The Windows result for that exact value was not measured; that the
