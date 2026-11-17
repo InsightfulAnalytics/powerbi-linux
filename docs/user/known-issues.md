@@ -3,7 +3,7 @@
 > [!WARNING]
 > **Power BI Linux is beta software.** Keep a private backup of your complete project and work with copies first. For PBIP projects, include `.pbi/cache.abf`: a normal Git checkout excludes imported cached data. See [cache recovery](../reference/model-cache.md).
 
-The tested platform is **Fedora 44 x86_64, native Wayland**, with a systemd user session and Vulkan graphics. Ubuntu 24.04/26.04 and Debian 13 are accepted only as [experimental DEB targets](debian-ubuntu.md), not certified platforms. Other distributions and X11 are outside the current support target. Other Fedora versions are experimental.
+The tested platform is **Fedora 44 x86_64, native Wayland**, with a systemd user session and Vulkan graphics. Ubuntu 24.04/26.04 and Debian 13 are accepted only as [experimental DEB targets](debian-ubuntu.md), and Arch Linux and Omarchy only as an [experimental source package](arch.md); none is a certified platform. Other distributions and X11 are outside the current support target. Other Fedora versions are experimental.
 
 ## What has worked in recorded tests
 
@@ -16,6 +16,8 @@ Opening PBIX/PBIP/PBIR from the desktop; CSV import, visuals and save/reopen; a 
 | Installing from current published releases | Partial | RPM 18 enables automatic setup: `pbi-linux setup` downloads the published runtime, its matching source and evidence, and the pinned Microsoft installer, verifying every SHA-256. Earlier published previews need explicit local inputs. The published runtime is a beta candidate whose two-hour soak is pending. See [installation](install.md). |
 | Published runtime 0.1.5 | Partial | Clean install, native components, a 158-table refresh, save/reopen and lifecycle checks passed on the exact archive; the two-hour soak remains pending. No stable runtime certification is claimed. |
 | New Power BI Desktop versions | Not validated as a release | RPM 18 targets 2.159.883.0 and also accepts the exact 2.158.1177.0 installer; other installer hashes are rejected. Do not bypass checksum checks. |
+| Automatic download of Power BI Desktop | Known failure in releases pinning 2.159.883.0 | Microsoft replaced that installer with 2.159.1231.0 at the same address on November 2, 2026, so setup stops with a checksum error. The source tree ports the recipe to 2.159.1231.0; with an older release, pass your own exact 2.159.883.0 file with `--installer`. See the [assessment](../reference/powerbi-2.159.md#215912310-november-2026). |
+| More than one monitor, Hyprland | Local correction, unpublished runtime | With runtime 0.1.6-beta.1 the window stays blank on a multi-monitor Hyprland desktop and the clipboard owner aborts. Four Wine corrections are in the source tree; they need a rebuilt runtime. See [Hyprland](../reference/hyprland.md). |
 | Embedded Windows authentication broker | Known failure | Use the default system browser for Microsoft sign-in. See [sign-in](sign-in.md). |
 | MySQL with explicit Windows username/password impersonation | Known failure | Wine's placeholder Windows token fails this flow. Database-password authentication passed in a local fixture; real-server TLS remains unvalidated. See [connectors](connectors.md). |
 | General Get Data / OneLake chooser | Not validated | Direct Text/CSV import passed. The general chooser was blocked by sign-in and has not been revalidated after authentication. Use the direct CSV entry for the tested CSV path. |
