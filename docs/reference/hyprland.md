@@ -91,7 +91,8 @@ round trip works in Analysis Services on Windows shows it yields a valid date.
 Runtime 0.1.6-beta.1 is the published archive. The local build is a
 `runtime/build.py` output of this source tree, SHA-256
 `73fb3dae562434c923ef04c47b6bbc14aade87be6f8b1374044c82e7f95deab4`; it is not
-published and a rebuild is not claimed byte-identical.
+published and a rebuild is not claimed byte-identical. The descriptions of two
+patches and one source comment were reworded after that build; no code changed.
 
 | Check | 0.1.6-beta.1 | Local build with the four patches |
 |---|---|---|
