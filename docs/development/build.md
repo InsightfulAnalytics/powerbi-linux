@@ -149,8 +149,9 @@ makepkg -f          # runs the unit suite in check()
 namcap PKGBUILD *.pkg.tar.zst
 ```
 
-File modes are normalised in `package()`, so a checkout on a filesystem without
-Unix modes builds the same package. `namcap` reports the `$startdir` reference
+`package()` ships only the files Git tracks, with the modes Git records, so
+untracked files in the checkout stay out and a checkout on a filesystem without
+Unix modes builds the same package. It needs a Git checkout. `namcap` reports the `$startdir` reference
 (the recipe deliberately packages its own checkout) and dependencies it cannot
 see because the runtime loads them, not the Python sources. See
 [experimental installation and scope](../user/arch.md).
