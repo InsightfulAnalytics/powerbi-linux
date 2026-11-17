@@ -141,3 +141,20 @@ only the first two patches gave the same results.
   per-window icon. Theme following is implemented for GNOME only.
 - No published runtime contains these patches. Until one does, build a runtime
   from the source tree; see [building](../development/build.md).
+
+## Later corrections: 2026-11-18
+
+Two further Wine defects were found on the same host. Neither changes Desktop.
+
+- **Legacy dialogs two pixels wide.** Hyprland reports every mapped toplevel as
+  maximized, and the driver passed that on to Desktop's borderless dialogs,
+  which then ignored their own resize.
+  `wine-11.18-wayland-fixed-dialog-maximized.patch`; see
+  [legacy HTML](legacy-html.md#dialogs-two-pixels-wide-on-hyprland-2026-11-18).
+- **Desktop frozen after a cursor change.** Not specific to Hyprland.
+  `wine-11.18-queue-masks-after-internal.patch`; see
+  [cursors](cursor.md#desktop-frozen-after-a-cursor-change-2026-11-18).
+
+Seen and not examined: when Desktop started on the workspace of the 2560x1440
+output it sometimes mapped as a floating window of 2564 x 1084 instead of a
+tile, with and without these patches.
