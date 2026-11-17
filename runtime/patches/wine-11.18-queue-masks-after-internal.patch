@@ -6,18 +6,22 @@ a message to another thread; wait_message_reply() then replaces the masks with
 QS_SMRESULT and nothing restores them. The caller goes on to wait on a queue
 that no posted or sent message can signal, until the next internal message
 happens to arrive.
-Power BI Desktop reaches this through the cursor resource patch:
-WM_WINE_SETCURSOR is handled here, the Wayland driver asks for the cursor
-image, and a cursor that belongs to the embedded browser is resolved with a
-blocking send to its owner. Whenever that send runs while the UI thread is
-idle (a cursor that is not a shared system cursor, such as a column resize
-cursor, takes it every time), the UI thread stops answering. Calls from the
-report page to the host stall and Desktop appears frozen until the pointer
-shape changes again.
+Power BI Desktop reaches this through the cursor resource patch. The server
+addresses WM_WINE_SETCURSOR to the top-level window, so Desktop's UI thread
+handles the cursors of the embedded browser. The Wayland driver asks for the
+cursor image, and a cursor owned by the browser process is resolved with a
+blocking send to its owner, 50 ms at most. A cursor that is not a shared
+system cursor (column resize, grab) is never cached and is sent every time.
+When the owner did not answer in time, the UI thread stopped answering: calls
+from the report page to the host stalled and Desktop appeared frozen until the
+pointer shape changed again. Whether a promptly answered lookup can do the
+same was not determined.
 Observed on 2026-11-18 for 6 min 48 s: the UI thread asleep in
 NtUserWaitMessage, server queue masks 0x8000/0x8000, wake bits 0x158, two sent
 and four posted messages pending. Moving the pointer onto a window of that
-thread woke it.
+thread woke it. tests/e2e/cursor-wake.py stops the owner for 400 ms during a
+lookup: the UI thread stopped answering in every round before this change and
+in none after it.
 Handle the internal messages first, then set the masks. Wine master had the
 same order as 11.18 on that date.
 Wine-derived change: LGPL-2.1-or-later.
