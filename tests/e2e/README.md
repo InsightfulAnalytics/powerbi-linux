@@ -55,3 +55,5 @@ The repeatable check runner and reusable 22-tab Options audit are described in
 installation; missing environments are blocked rather than passed.
 
 `cursor-wake.py --probes /path/to/compiled-probes` checks that Desktop's UI thread still answers after a cursor lookup that times out. It needs a disposable session started with `pbi-linux open --diagnostics`, a report open and the desktop pointer resting over the Desktop window; compile `cursor-wake-probe.cs` with the prefix's .NET compiler first. It stops the WebView2 browser process for 400 ms per round, moves only Wine's own cursor and fails when no lookup was logged. See `docs/reference/cursor.md`.
+
+`dialog-size.py --probes /path/to/compiled-probes` checks that a legacy HTML dialog reaches the size its page asks for and is not marked maximized. It needs a disposable session started with `pbi-linux open --diagnostics` and a report open; compile `dialog-size-probe.cs` first. By default it makes Desktop open its own unexpected error report; `--button "Data source settings" --title "Data source settings"` presses a ribbon button instead. The dialog is closed with `WM_CLOSE`. See `docs/reference/legacy-html.md`.
