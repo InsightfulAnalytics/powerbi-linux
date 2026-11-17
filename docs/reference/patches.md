@@ -21,6 +21,7 @@ and [Edit Permissions](permissions-wayland.md).
 | Wine visible-region race | A resize by the window's thread could leave the frame receiver's cached DC clipped to the old client area | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
 | Wine OLE Automation maximum date | Rounding the last half second of year 9999 produced an invalid date; Analysis Services then launched SQLDUMPER at every start | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
 | Wine queue masks after internal messages | A cursor lookup that waited for another process left the UI thread waiting on a queue no message could signal; Desktop appeared frozen until the pointer shape changed | LGPL-2.1-or-later; local build only, see [cursors](cursor.md#desktop-frozen-after-a-cursor-change-2026-11-18) |
+| Wine fixed-size dialog maximized state | Hyprland reports every mapped toplevel as maximized; Desktop's borderless legacy dialogs then ignored their own resize and stayed 2 x 2 pixels | LGPL-2.1-or-later; local build only, see [legacy HTML](legacy-html.md#dialogs-two-pixels-wide-on-hyprland-2026-11-18) |
 | Wine cgroup reporting | Report cgroup limits to CLR/Chromium/AS | Required; LGPL-2.1-or-later; initializes the path buffer in the product port |
 | Wine secur32 status | Return NTSTATUS rather than BOOL from LsaFreeReturnBuffer | Required; source fix replaces the old machine-code patch; LGPL-2.1-or-later |
 | DXVK presentation | Scoped GDI delivery for WebView HWND swapchains | Required; DXVK upstream terms, preserving Neutron-derived provenance |
