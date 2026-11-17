@@ -10,6 +10,10 @@ process never delivers WebView frames and Desktop stays blank.
 Carry the driver's current position into the physical mode, as the
 multi-mode path already does, and follow the host placement while no
 emulated mode is active.
+The second hunk applies to every driver: a stored current mode of the
+physical size takes the host's position, so a position-only change that an
+application requested for a single-mode source is not kept. A Wayland client
+cannot move an output in any case.
 Wine-derived change: LGPL-2.1-or-later.
 
 --- a/dlls/win32u/sysparams.c
