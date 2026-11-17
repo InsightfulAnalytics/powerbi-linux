@@ -18,6 +18,10 @@
   date that made Analysis Services launch SQLDUMPER at every start. No published
   runtime contains them yet. See [Hyprland](docs/reference/hyprland.md).
 
+- Accept Arch Linux and Omarchy as experimental platforms and add a source
+  `PKGBUILD` that packages the checkout. The doctor labels them experimental and
+  names `samba` as the `ntlm_auth` provider. See the [Arch guide](docs/user/arch.md).
+
 - Keep zero-valued Wine x64 protection metadata sparse on Linux, preserving
   protections, table addresses, edge bytes and fallback behavior. Add helper
   regression and synthetic Win64 probes; document isolated memory A/B and
