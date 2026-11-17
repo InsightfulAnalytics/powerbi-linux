@@ -37,7 +37,7 @@ styles, patch Microsoft assemblies or change report themes.
 
 The optional integration needs `gsettings` (Fedora's `glib2`, present in GNOME),
 a working user session bus and the already provisioned .NET compiler. Details
-and failures appear as `Desktop theme:` lines in the managed `session.log`.
+and failures appear as `Host theme:` lines (`GNOME theme:` before the Hyprland change) in the managed `session.log`.
 
 ## Validation
 
