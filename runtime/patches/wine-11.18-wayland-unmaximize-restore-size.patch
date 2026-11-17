@@ -1,0 +1,77 @@
+winewayland: use the restored size when a configure ends the maximized state without one
+
+A compositor may answer a window that starts maximized with a configure that
+carries neither the maximized state nor a size: the size is left to the
+client. Hyprland does so when it cannot predict a tile for the new window:
+the window it would split is floating. That was observed with a floating
+dialog holding the focus; DwindleAlgorithm.cpp takes the first window of the
+workspace when the focus is elsewhere, which was not exercised. The driver
+then cleared
+WS_MAXIMIZE and kept the window at the rectangle it had while maximized.
+That rectangle still covers the monitor, so win32u reports the window as
+fullscreen and not resizable, the driver announces it with equal minimum and
+maximum sizes, and Hyprland maps a window with a fixed size floating. Power
+BI Desktop, which starts maximized, came up as a floating window slightly
+larger than the monitor instead of a tile.
+When a configure ends the maximized state and gives no size, give the window
+the size of its restored placement, as restoring it does. It is then an
+ordinary resizable window: the compositor tiles it and sends the size of the
+tile. Compositors that send no size when a window that started maximized is
+restored are served by the same change.
+Applies after wine-11.18-wayland-fixed-dialog-maximized.patch and
+wine-11.18-wayland-keep-toplevel-state.patch; without the latter a configure
+sequence without a toplevel event would be read as such a request. Wine
+master had the same code on 2026-11-18.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/winewayland.drv/window.c
++++ b/dlls/winewayland.drv/window.c
+@@ -542,7 +542,8 @@
+     BOOL restoring_from_minimize = FALSE;
+     struct wayland_win_data *data;
+     RECT rect, surface_rect;
+-    BOOL fixed_dialog;
++    BOOL fixed_dialog, restore = FALSE;
++    WINDOWPLACEMENT placement = {.length = sizeof(placement)};
+ 
+     /* Read the window before taking the window data lock: win32u calls the
+      * driver with its own lock held, so the order must not be reversed. */
+@@ -677,6 +678,23 @@
+     if (rect.left == rect.right || rect.bottom == rect.top) flags |= SWP_NOSIZE;
+ 
+     style = NtUserGetWindowLongW(hwnd, GWL_STYLE);
++
++    /* A configure that ends the maximized state without giving a size leaves
++     * the size to the window. Use the size of its restored placement, as a
++     * restore does. At the size it had while maximized the window would still
++     * cover its monitor: it would count as fullscreen, be announced with a
++     * fixed size, and a tiling compositor maps such a window floating. */
++    if ((flags & SWP_NOSIZE) && (style & WS_MAXIMIZE) &&
++        !(state & (WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED |
++                   WAYLAND_SURFACE_CONFIG_STATE_FULLSCREEN)) &&
++        NtUserGetWindowPlacement(hwnd, &placement) &&
++        !IsRectEmpty(&placement.rcNormalPosition))
++    {
++        TRACE("hwnd=%p leaving the maximized state without a size, restoring %s\n",
++              hwnd, wine_dbgstr_rect(&placement.rcNormalPosition));
++        restore = TRUE;
++    }
++
+     if (!(state & WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED) != !(style & WS_MAXIMIZE)
+         && !(state & WAYLAND_SURFACE_CONFIG_STATE_FULLSCREEN))
+         NtUserSetWindowLong(hwnd, GWL_STYLE, style ^ WS_MAXIMIZE, FALSE);
+@@ -692,7 +710,13 @@
+         flags |= SWP_NOSENDCHANGING;
+     }
+ 
+-    NtUserSetRawWindowPos(hwnd, rect, flags, FALSE);
++    if (restore)
++        NtUserSetWindowPos(hwnd, 0, 0, 0,
++                           placement.rcNormalPosition.right - placement.rcNormalPosition.left,
++                           placement.rcNormalPosition.bottom - placement.rcNormalPosition.top,
++                           flags & ~SWP_NOSIZE);
++    else
++        NtUserSetRawWindowPos(hwnd, rect, flags, FALSE);
+ }
+ 
+ /**********************************************************************
