@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Bridge the desktop's color preference to Desktop's original Windows theme handler."""
+"""Bridge the host's color preference to Desktop's original Windows theme handler."""
 import os
 from pathlib import Path
 import shutil
@@ -47,7 +47,7 @@ class ThemeSync:
 
     def _log(self, message):
         with (self.paths.state / 'session.log').open('a') as stream:
-            stream.write('Desktop theme: ' + message + '\n')
+            stream.write('Host theme: ' + message + '\n')
 
     def start(self):
         if not DESKTOPS.intersection(os.environ.get('XDG_CURRENT_DESKTOP', '').upper().split(':')):
@@ -68,7 +68,7 @@ class ThemeSync:
                  source.name], env=self.env, cwd=folder, timeout=8,
                 log=self.paths.state / 'session.log')
             self.sync(selected)
-            self.thread = threading.Thread(target=self._watch, name='desktop-theme', daemon=True)
+            self.thread = threading.Thread(target=self._watch, name='host-theme', daemon=True)
             self.thread.start()
         except (Error, OSError) as error:
             self._log('synchronization unavailable: ' + str(error))
