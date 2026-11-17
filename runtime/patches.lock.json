@@ -13,6 +13,8 @@
   "wine-11.18-vprot-sparse-zero.patch": "62a3e248681bb299f3ce6c4436927b35ccdf987ad262cfd1c51ac44c2a0cc8df",
   "wine-11.18-wayland-data-control-primary.patch": "eaf2e13d6c32053fe9b8b35c5aeba6c8bbccdd629c3205a6a99ac20b1ed2b310",
   "wine-11.18-wayland-fixed-dialog-maximized.patch": "849f6e18dfc6fa1d6fb8b78464fb9aa6ac89ca1fd01ece75bb46853e00085679",
+  "wine-11.18-wayland-keep-toplevel-state.patch": "d112dd6c05fa4ebfe52cd64f40614aa5d7dba454042a7d1ff9d036d24431f4e5",
   "wine-11.18-wayland-normal-resize.patch": "59ece0115d772d0671e98fb7cb18930dfb1aa2045b8b38c37ee72f623ae58446",
-  "wine-11.18-wayland-parent.patch": "d8ed5e7c1d8d9f2751fb99a45d59f28594667f18f72a090f71ddb51ddebee346"
+  "wine-11.18-wayland-parent.patch": "d8ed5e7c1d8d9f2751fb99a45d59f28594667f18f72a090f71ddb51ddebee346",
+  "wine-11.18-wayland-unmaximize-restore-size.patch": "d82755f11071e5460ff9e21e0cfb724f52dcddfe56c763c143e0dc7667e6eeb6"
 }
