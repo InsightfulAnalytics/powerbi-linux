@@ -21,6 +21,10 @@
   runtime contains them yet. See [Hyprland](docs/reference/hyprland.md) and the
   [Arch guide](docs/user/arch.md).
 
+- Follow the light/dark preference on Hyprland sessions too, through the same
+  `color-scheme` key and only while Desktop's theme selection is System default.
+  Other desktops are still skipped. See [theme scope](docs/reference/gnome-theme.md).
+
 - Prepare the 0.1.0-19 beta CLI release (RPM `0.1.0-19`, experimental DEB
   `0.1.0-19~experimental1`). The setup manifest pins Runtime 0.1.6-beta.1
   binary, complete corresponding source and evidence with fixed SHA-256 values;

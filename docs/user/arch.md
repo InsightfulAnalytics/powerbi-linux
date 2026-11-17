@@ -78,8 +78,9 @@ associations remain opt-in (`pbi-linux setup --make-default`).
 - **Tiling.** Desktop opens as an ordinary tiled window. Tiled, floating,
   maximized and fullscreen states delivered frames on both monitors. How
   Hyprland places Desktop's own dialogs was not tested.
-- **Theme.** Following the desktop's light/dark preference is implemented for
-  GNOME only; on Hyprland Desktop keeps its own theme setting.
+- **Theme.** On Hyprland, Desktop follows `org.gnome.desktop.interface
+  color-scheme` (Omarchy sets it with every theme) once you select
+  **System default** in Desktop's theme menu. See [theme scope](../reference/gnome-theme.md).
 - **Window icon.** Hyprland 0.56.2 does not offer `xdg_toplevel_icon_manager_v1`,
   so Wine cannot set a per-window icon. The launcher icon is unaffected.
 - **Log noise.** Arch's `samba` package ships no `/etc/samba/smb.conf`, so

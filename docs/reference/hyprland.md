@@ -136,6 +136,6 @@ only the first two patches gave the same results.
   the correction follows from the code path rather than from a failing test.
   The stress rounds show no regression, not the absence of the race.
 - Hyprland 0.56.2 offers no `xdg_toplevel_icon_manager_v1`, so windows have no
-  per-window icon. Theme following is implemented for GNOME only.
+  per-window icon.
 - No published runtime contains these patches. The
   [Arch guide](../user/arch.md) describes the local build route.
