@@ -1,0 +1,39 @@
+winewayland: keep the toplevel state when a configure has no toplevel event
+
+An xdg_surface.configure ends a configure sequence. The sequence need not
+contain an xdg_toplevel.configure: the size and states of the toplevel then
+stay as they were. The driver cleared its pending toplevel state after every
+sequence, so such a sequence was read as "no size, no states", which for a
+maximized window is a request to leave the maximized state.
+Hyprland 0.56.2 sends one whenever a window becomes hidden or visible again:
+it wants to change the suspended state, which exists from xdg_wm_base
+version 6, and for an older client it only schedules the surface configure
+(XDGShell.cpp, setSuspeneded). The driver binds version 2. Every switch away
+from the workspace of a Wine window therefore cleared WS_MAXIMIZE, and a
+WinForms form answered by going back to its restored size inside a tile that
+kept its size. The next toplevel configure, usually sent when the window is
+focused again, put it right; a window shown again without the focus stayed
+at the wrong size.
+Keep the size and states of the last xdg_toplevel.configure for the next
+sequence. A compositor that supports the suspended state sends the same
+values again in that situation.
+Applies after wine-11.18-wayland-parent.patch. Wine master had the same code
+on 2026-11-18.
+Wine-derived change: LGPL-2.1-or-later.
+
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -58,7 +58,12 @@
+         initial_configure = surface->current.serial == 0;
+         surface->pending.serial = serial;
+         surface->requested = surface->pending;
+-        memset(&surface->pending, 0, sizeof(surface->pending));
++        /* A configure sequence without an xdg_toplevel.configure leaves the
++         * size and states of the toplevel as they were: a compositor may send
++         * one for a state this client does not know, for example when the
++         * window becomes hidden. Keep them for the next sequence, so that it
++         * is not taken for a request to leave the maximized state. */
++        surface->pending.serial = 0;
+     }
+ 
+     wayland_win_data_release(data);
