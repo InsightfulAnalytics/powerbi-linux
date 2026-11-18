@@ -83,6 +83,10 @@ def doctor(paths):
                 add('window-frame', frame_patched,
                     'Custom client frame and transparent resize zones are present' if frame_patched else
                     'Window frame correction is missing; close Desktop and run repair')
+                manager_configured = patches.DESKTOP_CONFIG in installed['patches']
+                add('desktop-instances', manager_configured,
+                    'A Desktop started by Desktop loads the compatibility manager' if manager_configured else
+                    'A Desktop started by Desktop (another report, a restart) crashes; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('sign-in-dialog', False, str(exc))
             try:

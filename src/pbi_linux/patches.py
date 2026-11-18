@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
 import hashlib
+import re
 from pathlib import Path
 import shutil
 from .common import Error, check_digest, digest, run, wine_env
@@ -40,6 +41,30 @@ def originals_for(desktop_sha256):
 NATIVE_DIALOG = 'PowerBISaveDialog.dll'
 CACHE_COMPAT = 'PowerBICacheCompatibility.dll'
 WINDOW_FRAME = 'PowerBIWindowFrame.dll'
+DESKTOP_CONFIG = 'PBIDesktop.exe.config'
+MANAGER_ASSEMBLY = 'PowerBICompositionManager'
+MANAGER_TYPE = 'CompositionManager'
+
+
+def patch_config(source):
+    """Name the production AppDomain manager in Desktop's own configuration.
+
+    The CLR removes APPDOMAIN_MANAGER_ASM and APPDOMAIN_MANAGER_TYPE from the
+    process environment once it has read them. A Desktop started by Desktop
+    (opening a report beside an open one, a recent file, a restart) therefore
+    ran without the manager, lost its culture workaround and crashed in
+    AppModule.Run. Every PBIDesktop.exe start reads this file; no other
+    program does, so Desktop's other .NET children stay as they were.
+    """
+    if b'appDomainManager' in source:
+        raise Error('Unexpected AppDomain manager in the Desktop configuration')
+    match = re.search(rb'<runtime>(\r?\n)', source)
+    if source.count(b'<runtime') != 1 or not match:
+        raise Error('Unexpected runtime section in the Desktop configuration')
+    newline = match.group(1)
+    elements = (b'    <appDomainManagerAssembly value="' + MANAGER_ASSEMBLY.encode() + b'" />' + newline +
+                b'    <appDomainManagerType value="' + MANAGER_TYPE.encode() + b'" />' + newline)
+    return source[:match.end()] + elements + source[match.end():]
 
 
 def build_native_dialog(helpers, wine, env, log, key):
@@ -161,7 +186,11 @@ def install(prefix, runtime, log):
     if not picker_source.exists():
         picker_source = bin_dir / picker_name
     patched_picker = tooltips.patch_document(text_pickers.patch_document(picker_source.read_bytes()))
-    for name in (*originals, picker_name):
+    config_source = backups / DESKTOP_CONFIG
+    if not config_source.exists():
+        config_source = bin_dir / DESKTOP_CONFIG
+    patched_config = patch_config(config_source.read_bytes())
+    for name in (*originals, picker_name, DESKTOP_CONFIG):
         backup = backups / name
         if not backup.exists():
             backup.parent.mkdir(parents=True, exist_ok=True)
@@ -235,8 +264,12 @@ def install(prefix, runtime, log):
         out = bin_dir / (picker_name + '.new')
         out.write_bytes(patched_picker)
         os.replace(out, bin_dir / picker_name)
+        out = bin_dir / (DESKTOP_CONFIG + '.new')
+        out.write_bytes(patched_config)
+        os.replace(out, bin_dir / DESKTOP_CONFIG)
     finally:
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)
     return {name: digest(bin_dir/name) for name in (*originals, 'WinRTStubs.dll',
-                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name)}
+                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name,
+                                                   DESKTOP_CONFIG)}
