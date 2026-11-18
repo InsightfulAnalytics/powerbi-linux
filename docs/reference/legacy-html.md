@@ -118,3 +118,71 @@ in Wine, followed by a pane-height error. The runtime and guarded local UI recip
 fix these two stages; seven numeric cases and the 22-tab synthetic navigation/
 geometry audit passed. See [Options](options-dialog.md) for evidence, installation
 and remaining limits. This does not certify other untested nested HTML dialogs.
+
+## Scroll bars inside Data source settings: 2026-11-18
+
+Found on a Hyprland host with Desktop 2.159.1231.0. Once the dialog had its
+size, its body showed a vertical and a horizontal scroll bar although the
+content is laid out for the
+dialog's width, and the vertical bar covered part of the sort button.
+
+### Diagnosis
+
+Probes in the shared dialog script reported the layout three seconds after the
+dialog was shown:
+
+- The body is `#dialogContent` (`.o-group-body`), a flex item of the column
+  `.modal-main`. The style sheet gives it `overflow-y: auto` and a maximum
+  height of 590 pixels in a dialog that cannot be resized.
+- The body was 800 x 453 with a client area of 783 x 436 and a scrollable
+  extent of 800 x 441. The engine gave the flex item a content height of 436,
+  five pixels less than the extent of its last row of buttons.
+- Those five pixels call for the vertical bar. The bar narrows the client area
+  to 783, two children have a fixed width of 800
+  (`.o-group-dataSourceView`, `.o-group-bottomRowContainer`), and that calls
+  for the horizontal bar.
+- It is not stale state: hiding the body and showing it again, which rebuilds
+  its box, changed nothing. Hiding only the horizontal axis left the vertical
+  bar and a body of 436.
+
+Whether Internet Explorer's engine computes the same five pixels differently
+was not measured; no Windows installation was compared.
+
+### Correction
+
+The source list scrolls by itself (`.o-group-dataSourceEntries`, 300 pixels
+high) and the dialog is sized to its content, so the body never needs to
+scroll. One more guarded step in the UI recipe sets `overflow: hidden` on the
+body before the dialog is shown. It takes 55 of the 110 bytes of padding the
+source list step left in `komanagedatasourcesdialog.js`; PE and resource sizes
+and IL stay unchanged.
+
+The step is applied to **2.159.1231.0 only**. The recipe verifies the hash of
+the complete assembly, and the other supported builds were not available to
+compute one. They keep the output of the Options step. `pbi-linux doctor`
+reports the installed assembly as outdated until `pbi-linux repair` has run.
+
+### Evidence
+
+| Check | Before | With the step |
+|---|---|---|
+| Body client area | 783 x 436, both bars | No bars |
+| Dialog window | 802 x 587 | 802 x 592 |
+| Sort button | Partly covered | Whole |
+| Recipe output | `3b0639cf...` | `426f5e88...`, same length, only the source list resource differs |
+
+Screenshots of both views of the dialog (Global permissions and Data sources
+in current file, with four and five buttons in the bottom row) were reviewed:
+no bars, the sort button and every button whole. The dialog's own Close button
+closed it and re-enabled the main window. The fixture has no external source,
+so the list showed its empty text in both views.
+
+Limits:
+
+- One host. The step does not depend on the compositor, but only this one was
+  used.
+- The warning row for unknown data sources was not shown in the test. With
+  the body no longer scrolling, content taller than 590 pixels would be cut
+  off instead; nothing in this dialog comes near that height.
+- Other dialogs with the same body rule were not examined for the same five
+  pixels.
