@@ -12,6 +12,14 @@
   and 2.158.1177.0 installers stay accepted as local inputs. See the
   [assessment](docs/reference/powerbi-2.159.md#215912310-november-2026).
 
+- Name the production AppDomain manager in `PBIDesktop.exe.config` instead of
+  the session environment. The CLR clears `APPDOMAIN_MANAGER_ASM` and
+  `APPDOMAIN_MANAGER_TYPE` once it has read them, so a Desktop started by
+  Desktop (opening a report while another is open, a recent file, a restart)
+  ran without the culture helper and crashed with an access violation in
+  `AppModule.Run`. Repair applies the change; `pbi-linux doctor` reports it as
+  `desktop-instances`. Profiles not yet repaired keep the environment variables.
+
 - Accept Arch Linux and Omarchy as experimental platforms and add a source
   `PKGBUILD`. Correct four Wine defects found on a two-monitor Hyprland desktop:
   lost monitor placement for single-mode outputs (blank window), an abort of the

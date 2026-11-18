@@ -28,6 +28,7 @@ and [Edit Permissions](permissions-wayland.md).
 | Wine secur32 status | Return NTSTATUS rather than BOOL from LsaFreeReturnBuffer | Required; source fix replaces the old machine-code patch; LGPL-2.1-or-later |
 | DXVK presentation | Scoped GDI delivery for WebView HWND swapchains | Required; DXVK upstream terms, preserving Neutron-derived provenance |
 | Culture helper | Select installed non-RTL UI cultures | Required; independent GPL-3.0-or-later |
+| Desktop configuration names the AppDomain manager | The CLR clears the manager's environment variables once it has read them, so a Desktop started by Desktop (another report, a recent file, a restart) ran without the culture helper and crashed in `AppModule.Run`; `PBIDesktop.exe.config` now names it for every Desktop start | Required; two elements inserted at the start of `<runtime>`, refused if the file already names a manager or has no single `<runtime>` section; original kept with the other backups |
 | Shared/WinRT local assembly changes | Installed-path discovery and missing WinRT contracts | Required for pinned app; independent GPL patch tools; patched Microsoft binaries remain local |
 | AS self-token change | Replace a specific anonymous-impersonation call with real self impersonation | Experimental semantics, required by current recipe; original hash and byte checks enforced |
 | WebView2 per-app Windows version | The investigated profile used `win7` for `msedgewebview2.exe`; reproducing it prevents fixed-runtime GPU crashes, while Desktop remains on `win10` | Required by the tested recipe |

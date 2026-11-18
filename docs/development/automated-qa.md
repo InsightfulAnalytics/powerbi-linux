@@ -114,7 +114,10 @@ APPDOMAIN_MANAGER_TYPE=OptionsAuditManager
 PBI_OPTIONS_AUDIT_DIR=<Windows path to private bridge>
 ```
 
-The directory must exist and be private. Prepare only the generated
+A configuration file wins over these variables: if the copy carries a
+`PBIOptionsAudit.exe.config` taken from `PBIDesktop.exe.config`, change its
+`appDomainManagerAssembly` and `appDomainManagerType` values to
+`OptionsAuditManager` as well. The directory must exist and be private. Prepare only the generated
 `Synthetic.pbip` fixture, then open File → Options and settings → Options in that
 QA copy. The manager requires the exact synthetic main window and evaluates
 requests only in its Options WebBrowser. It is absent from production helper
