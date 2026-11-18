@@ -44,6 +44,11 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   window from the compositor (it is listed by `hyprctl clients`) to get Desktop
   back. No published runtime contains the correction yet; see
   [legacy HTML](../reference/legacy-html.md#dialogs-two-pixels-wide-on-hyprland-2026-11-18).
+- **On Hyprland, Desktop opens as a floating window larger than the screen, or
+  its content shrinks to a corner of its tile after a workspace switch:** make
+  the window tiled with the compositor's toggle for floating windows, or give
+  it the focus. No published runtime contains the corrections yet; see
+  [Hyprland](../reference/hyprland.md#later-corrections-2026-11-18).
 - **Privacy Level or OK does not react in Edit Permissions:** a separate Wayland
   correction requires runtime 0.1.1; the independent serializer correction requires
   the RPM 8 HTML recipe applied to the profile. Synthetic compositor-input
