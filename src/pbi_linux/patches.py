@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
 import hashlib
+import re
 from pathlib import Path
 import shutil
 from .common import Error, check_digest, digest, run, wine_env
@@ -12,16 +13,58 @@ ORIGINALS = {
     'msmdsrv.exe': '7975dcb62edd6e53cc16fe808f66dbf0551cb155069138d68080c4bd32e92a1d',
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_ORIGINAL_SHA256,
 }
+# 2.159.883.0. The name dates from when that build was the current one.
 CURRENT_ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': 'b374f445156cea1caf13eabbfc0b03ee8d2179a75039713f0dfc9cad2535c10a',
     'Microsoft.PowerBI.Client.Windows.dll': '5c49618814888815ec3649ad2bf7dcf0209de1b3722d30372c126b3ebaf79938',
     'msmdsrv.exe': '90dd9882dd0ef22c1a49261099021798d1edf4817afff6b336322e7651659495',
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2159_ORIGINAL_SHA256,
 }
+# 2.159.1231.0 rebuilt the three managed assemblies; msmdsrv.exe is unchanged.
+ORIGINALS_2159_1231 = {
+    'Microsoft.PowerBI.Client.Shared.dll': '3c4a994c17a3a61396711c6986b2a03f898bca9eb6973b893a91207fc68a99bc',
+    'Microsoft.PowerBI.Client.Windows.dll': '708f3de4cffe09a0c3aed30db5f0af820c3a7219b7924f0fac062b815d8e6c32',
+    'msmdsrv.exe': CURRENT_ORIGINALS['msmdsrv.exe'],
+    'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2159_1231_ORIGINAL_SHA256,
+}
+RECIPES = {'2.158.1177.0': ORIGINALS, '2.159.883.0': CURRENT_ORIGINALS,
+           '2.159.1231.0': ORIGINALS_2159_1231}
+
+
+def originals_for(desktop_sha256):
+    """Select one complete recipe from the exact Desktop assembly; 2.158 otherwise."""
+    for recipe in (ORIGINALS_2159_1231, CURRENT_ORIGINALS):
+        if recipe['Microsoft.PowerBI.Client.Windows.dll'] == desktop_sha256:
+            return recipe
+    return ORIGINALS
 
 NATIVE_DIALOG = 'PowerBISaveDialog.dll'
 CACHE_COMPAT = 'PowerBICacheCompatibility.dll'
 WINDOW_FRAME = 'PowerBIWindowFrame.dll'
+DESKTOP_CONFIG = 'PBIDesktop.exe.config'
+MANAGER_ASSEMBLY = 'PowerBICompositionManager'
+MANAGER_TYPE = 'CompositionManager'
+
+
+def patch_config(source):
+    """Name the production AppDomain manager in Desktop's own configuration.
+
+    The CLR removes APPDOMAIN_MANAGER_ASM and APPDOMAIN_MANAGER_TYPE from the
+    process environment once it has read them. A Desktop started by Desktop
+    (opening a report beside an open one, a recent file, a restart) therefore
+    ran without the manager, lost its culture workaround and crashed in
+    AppModule.Run. Every PBIDesktop.exe start reads this file; no other
+    program does, so Desktop's other .NET children stay as they were.
+    """
+    if b'appDomainManager' in source:
+        raise Error('Unexpected AppDomain manager in the Desktop configuration')
+    match = re.search(rb'<runtime>(\r?\n)', source)
+    if source.count(b'<runtime') != 1 or not match:
+        raise Error('Unexpected runtime section in the Desktop configuration')
+    newline = match.group(1)
+    elements = (b'    <appDomainManagerAssembly value="' + MANAGER_ASSEMBLY.encode() + b'" />' + newline +
+                b'    <appDomainManagerType value="' + MANAGER_TYPE.encode() + b'" />' + newline)
+    return source[:match.end()] + elements + source[match.end():]
 
 
 def build_native_dialog(helpers, wine, env, log, key):
@@ -118,8 +161,7 @@ def install(prefix, runtime, log):
     desktop_source = backups / 'Microsoft.PowerBI.Client.Windows.dll'
     if not desktop_source.exists():
         desktop_source = bin_dir / desktop_source.name
-    current = digest(desktop_source) == CURRENT_ORIGINALS[desktop_source.name]
-    originals = CURRENT_ORIGINALS if current else ORIGINALS
+    originals = originals_for(digest(desktop_source))
     # Validate every input before replacing any file.
     for name, expected in originals.items():
         backup = backups / name
@@ -135,14 +177,20 @@ def install(prefix, runtime, log):
     windows_source = backups / windows_name
     if not windows_source.exists():
         windows_source = bin_dir / windows_name
-    patched_windows = (signin.patch_windows(windows_source.read_bytes(), CURRENT_ORIGINALS[windows_name])
-                       if current else signin.patch_windows(windows_source.read_bytes()))
+    # The 2.158 fallback keeps signin's own fixed whole-file guard.
+    patched_windows = (signin.patch_windows(windows_source.read_bytes())
+                       if originals is ORIGINALS else
+                       signin.patch_windows(windows_source.read_bytes(), originals[windows_name]))
     picker_name = text_pickers.DOCUMENT
     picker_source = backups / picker_name
     if not picker_source.exists():
         picker_source = bin_dir / picker_name
     patched_picker = tooltips.patch_document(text_pickers.patch_document(picker_source.read_bytes()))
-    for name in (*originals, picker_name):
+    config_source = backups / DESKTOP_CONFIG
+    if not config_source.exists():
+        config_source = bin_dir / DESKTOP_CONFIG
+    patched_config = patch_config(config_source.read_bytes())
+    for name in (*originals, picker_name, DESKTOP_CONFIG):
         backup = backups / name
         if not backup.exists():
             backup.parent.mkdir(parents=True, exist_ok=True)
@@ -216,8 +264,12 @@ def install(prefix, runtime, log):
         out = bin_dir / (picker_name + '.new')
         out.write_bytes(patched_picker)
         os.replace(out, bin_dir / picker_name)
+        out = bin_dir / (DESKTOP_CONFIG + '.new')
+        out.write_bytes(patched_config)
+        os.replace(out, bin_dir / DESKTOP_CONFIG)
     finally:
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)
     return {name: digest(bin_dir/name) for name in (*originals, 'WinRTStubs.dll',
-                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name)}
+                                                   'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name,
+                                                   DESKTOP_CONFIG)}

@@ -4,6 +4,35 @@
 
 ### Unreleased — product repository and upstream review
 
+- Port the guarded recipe to Power BI Desktop 2.159.1231.0, which Microsoft has
+  served at the pinned address since November 2, 2026, and make it the default.
+  Releases pinning 2.159.883.0 fail the automatic download with a checksum error.
+  The five legacy HTML resources are byte-identical and moved by 328 bytes; the
+  Options native method differs only in two user-string tokens. Exact 2.159.883.0
+  and 2.158.1177.0 installers stay accepted as local inputs. See the
+  [assessment](docs/reference/powerbi-2.159.md#215912310-november-2026).
+
+- Name the production AppDomain manager in `PBIDesktop.exe.config` instead of
+  the session environment. The CLR clears `APPDOMAIN_MANAGER_ASM` and
+  `APPDOMAIN_MANAGER_TYPE` once it has read them, so a Desktop started by
+  Desktop (opening a report while another is open, a recent file, a restart)
+  ran without the culture helper and crashed with an access violation in
+  `AppModule.Run`. Repair applies the change; `pbi-linux doctor` reports it as
+  `desktop-instances`. Profiles not yet repaired keep the environment variables.
+
+- Accept Arch Linux and Omarchy as experimental platforms and add a source
+  `PKGBUILD`. Correct four Wine defects found on a two-monitor Hyprland desktop:
+  lost monitor placement for single-mode outputs (blank window), an abort of the
+  clipboard owner on a primary selection event, a visible-region race that left
+  half of the window blank after a tiled resize, and rounding of the maximum
+  date that made Analysis Services launch SQLDUMPER at every start. No published
+  runtime contains them yet. See [Hyprland](docs/reference/hyprland.md) and the
+  [Arch guide](docs/user/arch.md).
+
+- Follow the light/dark preference on Hyprland sessions too, through the same
+  `color-scheme` key and only while Desktop's theme selection is System default.
+  Other desktops are still skipped. See [theme scope](docs/reference/gnome-theme.md).
+
 - Prepare the 0.1.0-19 beta CLI release (RPM `0.1.0-19`, experimental DEB
   `0.1.0-19~experimental1`). The setup manifest pins Runtime 0.1.6-beta.1
   binary, complete corresponding source and evidence with fixed SHA-256 values;

@@ -118,3 +118,140 @@ in Wine, followed by a pane-height error. The runtime and guarded local UI recip
 fix these two stages; seven numeric cases and the 22-tab synthetic navigation/
 geometry audit passed. See [Options](options-dialog.md) for evidence, installation
 and remaining limits. This does not certify other untested nested HTML dialogs.
+
+## Dialogs two pixels wide on Hyprland: 2026-11-18
+
+Observed on the two-monitor Hyprland host described in [Hyprland](hyprland.md),
+with Desktop 2.159.1231.0. The unexpected error report ("Something went wrong")
+and Data source settings opened as a 2 x 2 pixel window with no visible content
+while the main window stayed disabled. To the user this is a frozen Desktop
+with nothing to dismiss. Posting `WM_CLOSE` to the dialog restored Desktop.
+
+### Diagnosis
+
+These dialogs share one host (`Ux.FloatingDialog.FloatingDialog`): a borderless
+owned WinForms form that starts at 2 x 2 pixels. The page measures its content
+and calls the host (`ModalDialog._resizeHost` to `Js_OnResize`), which sets the
+form size.
+
+- Trace probes in the dialog script showed the page healthy: 4434 characters of
+  content, measured at 460 x 242, and the host call made and returned.
+- No `SetWindowPos` followed. A relay trace showed the host reading the monitor
+  DPI and nothing else.
+- The form carried `WS_MAXIMIZE`. Hyprland sets the maximized state on every
+  toplevel when it is mapped, so that clients draw no decorations, and the
+  Wayland driver mirrors that state into the window style. WinForms only
+  records a new size while a form is maximized.
+
+An earlier working diagnosis in this file blamed Internet Explorer's element
+resize events, which Wine's HTML engine does not raise. Polling the size in the
+dialog script instead changed nothing, which disproved it.
+
+### Correction
+
+`wine-11.18-wayland-fixed-dialog-maximized.patch` ignores the compositor's
+maximized state for an owned window without a sizing frame, unless the window
+is maximized itself. Such a window is announced with equal minimum and maximum
+sizes and cannot have been maximized by the compositor. No Desktop file and no
+dialog script changes.
+
+### Evidence
+
+`tests/e2e/dialog-size.py` opens a dialog in a diagnostics session and checks
+its window. Local builds of this source tree, not published:
+
+| Check | Without the patch | With the patch (SHA-256 `85894f9f8dc06c6153899df058edbf75b1be40e46a84cad073a701b78b6fe8d6`) |
+|---|---|---|
+| Unexpected error report | 2 x 2, maximized | 462 x 244, not maximized, in two runs |
+| Data source settings | 2 x 2, maximized | 802 x 609, not maximized |
+| Content and buttons | Nothing visible | Message and buttons drawn; Cancel and Close dismissed the dialogs and re-enabled the main window |
+| Main window | Maximized style, tiled | Unchanged |
+| `session.py --ui-refresh --save` | Passed on 2026-11-17 | Passed: total 300, fact rows, relationship filter, save |
+
+Limits:
+
+- One host. Other compositors do not report a floating dialog as maximized, so
+  the patch should not act there; that was not tested.
+- Only these two dialogs were opened. The navigator, credential prompts and the
+  Power Query dialogs use the same host and were not exercised.
+- A first version read the window style while holding the driver's window data
+  lock and deadlocked Desktop during startup. The style is now read first.
+- Data source settings showed scroll bars inside the dialog; see the next
+  section.
+- The error report was triggered by sending the report page's error message to
+  the host with one argument missing. Desktop's own handling of that error is
+  what the dialog reports.
+- The error report does not always settle at 462 x 244. Counting the first
+  three openings of four fresh sessions, it settled at 640 x 224 in 4 of 12
+  with this patch alone and in 5 of 12 with the later driver patches: the same
+  content on fewer lines. 640 is the width of the page laid out in a wide
+  window (the message has a maximum width of 600 pixels), 462 its width laid
+  out in the initial 2 x 2 window. What gives the page a wide window in those
+  openings was not established.
+
+## Scroll bars inside Data source settings: 2026-11-18
+
+Same host and Desktop build. Once the dialog had its size, its body showed a
+vertical and a horizontal scroll bar although the content is laid out for the
+dialog's width, and the vertical bar covered part of the sort button.
+
+### Diagnosis
+
+Probes in the shared dialog script reported the layout three seconds after the
+dialog was shown:
+
+- The body is `#dialogContent` (`.o-group-body`), a flex item of the column
+  `.modal-main`. The style sheet gives it `overflow-y: auto` and a maximum
+  height of 590 pixels in a dialog that cannot be resized.
+- The body was 800 x 453 with a client area of 783 x 436 and a scrollable
+  extent of 800 x 441. The engine gave the flex item a content height of 436,
+  five pixels less than the extent of its last row of buttons.
+- Those five pixels call for the vertical bar. The bar narrows the client area
+  to 783, two children have a fixed width of 800
+  (`.o-group-dataSourceView`, `.o-group-bottomRowContainer`), and that calls
+  for the horizontal bar.
+- It is not stale state: hiding the body and showing it again, which rebuilds
+  its box, changed nothing. Hiding only the horizontal axis left the vertical
+  bar and a body of 436.
+
+Whether Internet Explorer's engine computes the same five pixels differently
+was not measured; no Windows installation was compared.
+
+### Correction
+
+The source list scrolls by itself (`.o-group-dataSourceEntries`, 300 pixels
+high) and the dialog is sized to its content, so the body never needs to
+scroll. One more guarded step in the UI recipe sets `overflow: hidden` on the
+body before the dialog is shown. It takes 55 of the 110 bytes of padding the
+source list step left in `komanagedatasourcesdialog.js`; PE and resource sizes
+and IL stay unchanged.
+
+The step is applied to **2.159.1231.0 only**. The recipe verifies the hash of
+the complete assembly, and the other supported builds were not available to
+compute one. They keep the output of the Options step. `pbi-linux doctor`
+reports the installed assembly as outdated until `pbi-linux repair` has run.
+
+### Evidence
+
+| Check | Before | With the step |
+|---|---|---|
+| Body client area | 783 x 436, both bars | No bars |
+| Dialog window | 802 x 587 | 802 x 592 |
+| Sort button | Partly covered | Whole |
+| Recipe output | `3b0639cf...` | `426f5e88...`, same length, only the source list resource differs |
+
+Screenshots of both views of the dialog (Global permissions and Data sources
+in current file, with four and five buttons in the bottom row) were reviewed:
+no bars, the sort button and every button whole. The dialog's own Close button
+closed it and re-enabled the main window. The fixture has no external source,
+so the list showed its empty text in both views.
+
+Limits:
+
+- One host. The step does not depend on the compositor, but only this one was
+  used.
+- The warning row for unknown data sources was not shown in the test. With
+  the body no longer scrolling, content taller than 590 pixels would be cut
+  off instead; nothing in this dialog comes near that height.
+- Other dialogs with the same body rule were not examined for the same five
+  pixels.

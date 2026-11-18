@@ -1,5 +1,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
+import importlib.util
 import os
 import shutil
 import subprocess
@@ -12,6 +13,16 @@ BUILDER = ROOT / 'tools/build-deb.py'
 
 
 class DebianPackaging(unittest.TestCase):
+    def test_stage_skips_makepkg_work_directories(self):
+        # makepkg keeps its work directories beside the PKGBUILD, and pkg/ is
+        # unreadable while check() runs this suite.
+        spec = importlib.util.spec_from_file_location('build_deb', BUILDER)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        names = ['PKGBUILD', 'pkg', 'src', 'powerbi-linux-0.1.0-19-x86_64.pkg.tar.zst']
+        self.assertEqual(module.ignored(str(ROOT / 'packaging/arch'), names), names[1:])
+        self.assertEqual(module.ignored(str(ROOT / 'packaging'), ['arch', 'pkg', 'src']), [])
+
     def test_python_bytecode_is_cleaned_before_package_files_are_removed(self):
         with tempfile.TemporaryDirectory() as directory:
             stage = Path(directory) / 'stage'

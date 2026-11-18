@@ -31,7 +31,7 @@ def doctor(paths):
             ctypes.CDLL(library)
             add(library,True,'Host library is available')
         except OSError:
-            add(library,False,'Install the project package with DNF or APT to resolve dependencies')
+            add(library,False,'Install the project package with DNF, APT or pacman to resolve dependencies')
     bus = subprocess.run(['systemctl','--user','show-environment'], capture_output=True, timeout=5)
     add('user-service-manager', bus.returncode == 0, 'A working systemd user session is required')
     add('installation', paths.active.exists(), 'Run setup to create a managed installation')
@@ -83,6 +83,10 @@ def doctor(paths):
                 add('window-frame', frame_patched,
                     'Custom client frame and transparent resize zones are present' if frame_patched else
                     'Window frame correction is missing; close Desktop and run repair')
+                manager_configured = patches.DESKTOP_CONFIG in installed['patches']
+                add('desktop-instances', manager_configured,
+                    'A Desktop started by Desktop loads the compatibility manager' if manager_configured else
+                    'A Desktop started by Desktop (another report, a restart) crashes; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('sign-in-dialog', False, str(exc))
             try:

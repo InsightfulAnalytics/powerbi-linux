@@ -1,7 +1,9 @@
 # Build from a clean source tree
 
 The current recipe defaults to runtime **0.1.6-beta.1** (`--runtime-version 0.1.6-beta.1`), with
-the Power BI 2.159.883.0 installer pin and the existing reviewed Wine/DXVK patches.
+the Power BI 2.159.1231.0 installer pin and the existing reviewed Wine/DXVK patches.
+The tree additionally holds four Wine corrections found on Hyprland that no
+published runtime contains yet; see [Hyprland](../reference/hyprland.md).
 A complete local build and successful-build receipt were produced on October 20.
 The 2.159 port passed offline and preliminary native checks; exact-archive release
 acceptance is tracked separately. See [the current assessment](../reference/powerbi-2.159.md).
@@ -134,6 +136,25 @@ never provisions Wine or Microsoft software. See the CI matrix for usage.
 Distribute the checksum and matching [source export](#corresponding-source) with
 the DEB; signing and repository publication remain separate release operations.
 See [experimental installation and scope](../user/debian-ubuntu.md).
+
+## Experimental Arch package
+
+`packaging/arch/PKGBUILD` packages the checkout that contains it: the CLI,
+recipes and desktop integration, with no runtime binary, Microsoft installer or
+prefix. It is not published and has no AUR entry.
+
+```bash
+cd packaging/arch
+makepkg -f          # runs the unit suite in check()
+namcap PKGBUILD *.pkg.tar.zst
+```
+
+`package()` ships only the files Git tracks, with the modes Git records, so
+untracked files in the checkout stay out and a checkout on a filesystem without
+Unix modes builds the same package. It needs a Git checkout. `namcap` reports the `$startdir` reference
+(the recipe deliberately packages its own checkout) and dependencies it cannot
+see because the runtime loads them, not the Python sources. See
+[experimental installation and scope](../user/arch.md).
 
 ## Corresponding source
 

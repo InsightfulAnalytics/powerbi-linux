@@ -33,6 +33,22 @@ Before attaching any log to a public issue, remove usernames, document paths, da
   correction. Record time from opening to first successful interaction, whether
   it repeats on a second opening, and whether keyboard focus responds. Avoid
   repeatedly submitting permission changes while response is delayed.
+- **Desktop stops reacting after a resize, while the report still paints:**
+  a cursor lookup could leave Desktop's own thread asleep until the pointer
+  shape changed again. Move the pointer onto the caption buttons to wake it. No
+  published runtime contains the correction yet; see
+  [cursor evidence](../reference/cursor.md#desktop-frozen-after-a-cursor-change-2026-11-18).
+  Whether the delay in the previous item has the same cause is not established.
+- **On Hyprland, Desktop stops reacting after an error or after opening Data
+  source settings:** the dialog opened as a 2 x 2 pixel window. Close that
+  window from the compositor (it is listed by `hyprctl clients`) to get Desktop
+  back. No published runtime contains the correction yet; see
+  [legacy HTML](../reference/legacy-html.md#dialogs-two-pixels-wide-on-hyprland-2026-11-18).
+- **On Hyprland, Desktop opens as a floating window larger than the screen, or
+  its content shrinks to a corner of its tile after a workspace switch:** make
+  the window tiled with the compositor's toggle for floating windows, or give
+  it the focus. No published runtime contains the corrections yet; see
+  [Hyprland](../reference/hyprland.md#later-corrections-2026-11-18).
 - **Privacy Level or OK does not react in Edit Permissions:** a separate Wayland
   correction requires runtime 0.1.1; the independent serializer correction requires
   the RPM 8 HTML recipe applied to the profile. Synthetic compositor-input

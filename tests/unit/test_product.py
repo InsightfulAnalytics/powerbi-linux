@@ -14,7 +14,7 @@ from unittest.mock import patch
 from types import SimpleNamespace
 import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]/'src'))
-from pbi_linux import assets, common, launch, provision, pe_cache, desktop, webview, cli
+from pbi_linux import assets, common, launch, patches, provision, pe_cache, desktop, webview, cli
 
 
 class ProductTests(unittest.TestCase):
@@ -402,6 +402,21 @@ class ProductTests(unittest.TestCase):
         for key in ('WINELOADER','WINESERVER','WINEARCH','PBI_UI_DIAGNOSTICS','PBI_WAYLAND_CAPTURE_DIR'):
             self.assertNotIn(key,env)
             self.assertNotIn(key,setup_env)
+
+    def test_configured_manager_is_not_inherited_by_other_programs(self):
+        runtime=self.runtime()
+        prefix=self.paths.data/'profiles/test'
+        prefix.mkdir(parents=True)
+        config=prefix/provision.BIN/patches.DESKTOP_CONFIG
+        config.parent.mkdir(parents=True)
+        config.write_bytes(b'<configuration />')
+        install={'prefix':str(prefix),'runtime':str(runtime),'patches':{patches.DESKTOP_CONFIG:common.digest(config)}}
+        with patch.dict(os.environ,{'APPDOMAIN_MANAGER_ASM':'Other','APPDOMAIN_MANAGER_TYPE':'Other'}), \
+             patch.object(launch,'verified_webview',return_value=prefix/'edge.dll'), patch.object(pe_cache,'valid',return_value=False):
+            env=launch.environment(self.paths,install)
+        self.assertNotIn('APPDOMAIN_MANAGER_ASM',env)
+        self.assertNotIn('APPDOMAIN_MANAGER_TYPE',env)
+        self.assertEqual(env['PBI_CULTURE_WORKAROUND'],'1')
 
     def test_unvalidated_webview_is_rejected_before_launch(self):
         prefix=self.paths.data/'profiles/test'

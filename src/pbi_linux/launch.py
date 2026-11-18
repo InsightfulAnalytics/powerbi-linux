@@ -12,7 +12,7 @@ import time
 from .common import Error, Paths, busy, installation_token, check_digest, read_json, run
 from .provision import active, BIN, settings, verified_webview
 from .theme import ThemeSync
-from . import pe_cache, resources, platforms
+from . import patches, pe_cache, resources, platforms
 
 def session_unit(data):
     token = installation_token(data)
@@ -42,9 +42,13 @@ def environment(paths, installation):
     env.pop('XAUTHORITY', None)
     for name in ('WINELOADER', 'WINESERVER', 'WINEDLLPATH', 'WINEARCH'):
         env.pop(name, None)
+    if patches.DESKTOP_CONFIG not in installation['patches']:
+        # A profile repaired before PBIDesktop.exe.config named the manager. The CLR
+        # clears these variables after reading them, so only this first Desktop gets
+        # the manager; a Desktop it starts itself crashes. Repair moves it into the config.
+        env.update(APPDOMAIN_MANAGER_ASM=patches.MANAGER_ASSEMBLY, APPDOMAIN_MANAGER_TYPE=patches.MANAGER_TYPE)
     env.update(WINEPREFIX=str(prefix), WINEDEBUG='-all,err+all', PBI_COMPOSITION='1',
                PBI_CULTURE_WORKAROUND='1', PBI_CGROUP_MEMORY='1',
-               APPDOMAIN_MANAGER_ASM='PowerBICompositionManager', APPDOMAIN_MANAGER_TYPE='CompositionManager',
                WINEDLLOVERRIDES='winemenubuilder.exe=d;msxml3,msxml6,msxml6r=b;d3d9,d3d10core,d3d11,dxgi,dcomp=n,b',
                LIB_ODBC_DRIVER_MANAGER='libodbc.so.2',
                DXVK_LOG_PATH=str(paths.state), DXVK_LOG_LEVEL='error')
