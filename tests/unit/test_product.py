@@ -67,6 +67,90 @@ class ProductTests(unittest.TestCase):
                 with self.paths.lock():
                     self.fail('Acquired an already held maintenance lock')
 
+    def test_lock_waits_a_bounded_time_for_its_holder(self):
+        import threading
+        held, release = threading.Event(), threading.Event()
+        def holder():
+            with self.paths.lock('launch'):
+                held.set()
+                release.wait(5)
+        thread = threading.Thread(target=holder)
+        thread.start()
+        try:
+            self.assertTrue(held.wait(5))
+            with self.assertRaisesRegex(common.Error, 'launch'):
+                with self.paths.lock('launch', wait=.2):
+                    self.fail('Acquired a held lock')
+            threading.Timer(.2, release.set).start()
+            with self.paths.lock('launch', wait=5):
+                pass
+            # A different lock is independent of it.
+            with self.paths.lock('maintenance'):
+                pass
+        finally:
+            release.set()
+            thread.join()
+
+    def test_second_open_waits_for_the_first_but_maintenance_still_refuses_it(self):
+        # Two reports opened together: the second must not be told that
+        # maintenance is running while the first is only starting the session.
+        import threading
+        runtime=self.runtime()
+        prefix=self.paths.data/'profiles/fixture';prefix.mkdir(parents=True)
+        common.atomic_json(self.paths.active,{'prefix':str(prefix),'runtime':str(runtime),'patches':{}})
+        self.paths.socket.touch()
+        entered, release, order = threading.Event(), threading.Event(), []
+        def request(paths, filename, diagnostics):
+            order.append('start')
+            entered.set()
+            if len(order) == 1:
+                release.wait(5)
+            order.append('end')
+            return {'ok': True}
+        with patch.object(launch,'request',side_effect=request), patch('pbi_linux.desktop.refresh_icon'):
+            first = threading.Thread(target=launch.open_file, args=(self.paths, None))
+            first.start()
+            self.assertTrue(entered.wait(5))
+            threading.Timer(.3, release.set).start()
+            launch.open_file(self.paths, None)
+            first.join()
+            self.assertEqual(order, ['start', 'end', 'start', 'end'])
+            with self.paths.lock():
+                with self.assertRaisesRegex(common.Error, 'maintenance'):
+                    launch.open_file(self.paths, None)
+            with self.paths.lock('launch'), patch.object(launch, 'LAUNCH_WAIT', .1):
+                with self.assertRaisesRegex(common.Error, 'launch'):
+                    launch.open_file(self.paths, None)
+
+    def test_desktop_started_by_desktop_counts_as_a_running_desktop(self):
+        prefix = self.paths.data/'profiles/fixture'
+        processes = self.root/'proc'
+        def process(pid, arguments, wineprefix=prefix, environ=True):
+            folder = processes/str(pid)
+            folder.mkdir(parents=True)
+            (folder/'cmdline').write_bytes(b'\0'.join(a.encode() for a in arguments) + b'\0' * 40)
+            if environ:
+                (folder/'environ').write_bytes(b'HOME=/home/user\0WINEPREFIX=' + str(wineprefix).encode() + b'\0')
+        (processes/'self').mkdir(parents=True)
+        process(10, ['C:\\windows\\system32\\services.exe'])
+        process(11, ['Z:\\tmp\\NotPBIDesktop.exe', 'PBIDesktop.exe.config'])
+        process(12, ['C:\\Program Files\\Microsoft Power BI Desktop\\bin\\PBIDesktop.exe',
+                     'Z:\\tmp\\Report.pbip'], wineprefix=str(prefix) + '-other')
+        process(13, ['PBIDesktop.exe'], environ=False)  # Exited between the two reads.
+        process(14, [])  # A zombie has no command line.
+        self.assertFalse(launch.desktop_running(prefix, processes))
+        # The form Wine shows for a Desktop that Desktop started itself.
+        process(20, ['C:\\Program Files\\Microsoft Power BI Desktop\\bin\\PBIDesktop.exe',
+                     'Z:\\tmp\\Report.pbip'])
+        self.assertTrue(launch.desktop_running(prefix, processes))
+        shutil.rmtree(processes/'20')
+        # The broker's own start: wine PBIDesktop.exe, before and after Wine renames it.
+        process(21, ['/opt/runtime/bin/wine', 'PBIDesktop.exe', 'Z:\\tmp\\Report.pbip'])
+        self.assertTrue(launch.desktop_running(prefix, processes))
+        shutil.rmtree(processes/'21')
+        process(22, ['pbidesktop.EXE', 'Z:\\tmp\\Report.pbip'])
+        self.assertTrue(launch.desktop_running(prefix, processes))
+
     def test_source_export_excludes_model_cache_credentials_and_binaries(self):
         project=self.root/'standalone'
         actual=Path(__file__).resolve().parents[2]
@@ -74,7 +158,16 @@ class ProductTests(unittest.TestCase):
             (project/name).mkdir(parents=True)
         for name in ('LICENSE','README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore'):
             (project/name).write_text('public')
-        shutil.copy2(actual/'tools/export-source.py',project/'tools/export-source.py')
+        for name in ('export-source.py','source_tree.py'):
+            shutil.copy2(actual/'tools'/name,project/'tools'/name)
+        # What a finished makepkg run leaves beside the PKGBUILD.
+        arch=project/'packaging/arch'
+        (arch/'pkg/usr/share/licenses').mkdir(parents=True)
+        (arch/'pkg/usr/share/licenses/LICENSE').symlink_to('/usr/share/powerbi-linux/LICENSE')
+        (arch/'src').mkdir()
+        (arch/'src/tracked-files').write_text('private test sentinel')
+        (arch/'powerbi-linux-0.1.0-19-x86_64.pkg.tar.zst').write_text('private test sentinel')
+        (arch/'PKGBUILD').write_text('public recipe')
         fixture=project/'tests/synthetic'
         (fixture/'.pbi').mkdir(parents=True)
         for name in ('.pbi/cache.abf','.env','.env.local','customer.pbix','Customer.PBIX','key.snk','built.dll'):
@@ -85,6 +178,15 @@ class ProductTests(unittest.TestCase):
         files=[p for p in export.rglob('*') if p.is_file()]
         self.assertFalse(any('private test sentinel' in p.read_text() for p in files))
         self.assertTrue((export/'tests/synthetic/definition.pbir').is_file())
+        self.assertEqual([p.name for p in (export/'packaging/arch').iterdir()],['PKGBUILD'])
+        # A symlink in an exported directory could copy private host files.
+        (project/'docs/host').symlink_to('/etc')
+        linked=subprocess.run([sys.executable,project/'tools/export-source.py',self.root/'linked-export'],
+                              capture_output=True,text=True)
+        self.assertNotEqual(linked.returncode,0)
+        self.assertIn('docs/host',linked.stderr)
+        self.assertFalse((self.root/'linked-export').exists())
+        (project/'docs/host').unlink()
         # A destination inside an exported directory would recursively copy
         # itself, potentially filling the user's disk before packaging.
         nested=project/'tests/nested-export'

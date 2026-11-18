@@ -16,7 +16,7 @@ accessible. Provisioning retains the same resumable transaction after resolution
 The installed application's recipe is recorded separately from its runtime so
 repair and runtime changes preserve the supported Desktop version.
 
-Opening a document sends its absolute Unix path through a private Unix socket to one systemd user service. The broker starts all Wine processes in the same cgroup, with optional resource ceilings selected through the CLI, converts paths with the runtime's `winepath` and launches additional Desktop windows without killing earlier documents. Launch and maintenance share a lock; maintenance also checks managed Wine processes outside the broker.
+Opening a document sends its absolute Unix path through a private Unix socket to one systemd user service. The broker starts all Wine processes in the same cgroup, with optional resource ceilings selected through the CLI, converts paths with the runtime's `winepath` and launches additional Desktop windows without killing earlier documents. Desktop also starts Desktop itself (File > Open with a report open, a recent file, a restart); the broker never sees those start, so it ends the session only when no `PBIDesktop.exe` of its prefix is left, not when its own children have exited. Launch and maintenance share a lock; maintenance also checks managed Wine processes outside the broker. A second lock orders concurrent launches, so a report opened while another is still starting the session waits for it (up to 40 seconds) instead of being refused as maintenance.
 
 Independent XDG installations derive distinct service, socket and lock names
 from their data directory. The default user's service name remains unchanged;
