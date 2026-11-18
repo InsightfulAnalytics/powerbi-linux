@@ -30,8 +30,13 @@ class SourceTree(unittest.TestCase):
     def test_every_tracked_file_is_selected(self):
         if not (ROOT / '.git').exists() or not shutil.which('git'):
             self.skipTest('not a Git checkout')
-        tracked = subprocess.run(['git', '-C', str(ROOT), 'ls-files', '-z'], check=True,
-                                 capture_output=True, text=True).stdout.split('\0')
+        # CI checks the tree out as another user; Git then needs the directory named as safe.
+        listing = subprocess.run(['git', '-c', 'safe.directory=' + str(ROOT), '-C', str(ROOT), 'ls-files', '-z'],
+                                 capture_output=True, text=True)
+        if listing.returncode:
+            self.skipTest('Git cannot list this checkout: ' + listing.stderr.strip())
+        tracked = listing.stdout.split('\0')
+        self.assertGreater(len(tracked), 100)
         dropped = [name for name in tracked if name and any(
             source_tree.excluded(ROOT / Path(*Path(name).parts[:depth]))
             for depth in range(1, len(Path(name).parts) + 1))]
