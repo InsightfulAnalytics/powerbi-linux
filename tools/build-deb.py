@@ -16,8 +16,11 @@ BUILDER_IMAGE = 'docker.io/library/debian@sha256:4876fdea29cac1a33a3195f1eb1952f
 
 
 def ignored(directory, names):
+    # makepkg keeps its work directories and built packages beside the PKGBUILD.
+    makepkg = Path(directory) == ROOT / 'packaging/arch'
     return [name for name in names if name in ('__pycache__', '.git', '.pbi', 'results', '.env')
             or name.startswith('.env.')
+            or (makepkg and (name in ('pkg', 'src') or '.pkg.tar.' in name))
             or name.lower().endswith(('.pyc', '.log', '.dmp', '.pbix', '.exe', '.dll', '.so', '.snk', '.pfx', '.pem'))]
 
 
