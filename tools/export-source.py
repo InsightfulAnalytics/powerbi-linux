@@ -6,7 +6,10 @@ import hashlib
 import json
 from pathlib import Path
 import shutil
+import sys
 import tarfile
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from source_tree import ignored, refuse_symlinks
 ROOT=Path(__file__).resolve().parent.parent
 p=argparse.ArgumentParser(description=__doc__)
 p.add_argument('output', type=Path)
@@ -20,11 +23,11 @@ if output.exists():
 if (ROOT.resolve().is_relative_to(output) or output.is_relative_to(ROOT/'sources')
         or any(output.is_relative_to((ROOT/name).resolve()) for name in allowed)):
     raise SystemExit('Invalid export destination')
+try:
+    refuse_symlinks(allowed)
+except ValueError as exc:
+    raise SystemExit(str(exc))
 output.mkdir(parents=True)
-def ignored(directory, names):
-    return [n for n in names if n in ('__pycache__','results','.git','.pbi','.env')
-            or n.startswith('.env.')
-            or n.lower().endswith(('.pyc','.log','.dmp','.abf','.pbix','.exe','.dll','.so','.snk','.pfx','.pem'))]
 for name in allowed:
     source=ROOT/name
     if source.is_dir():

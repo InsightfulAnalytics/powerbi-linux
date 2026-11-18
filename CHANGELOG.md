@@ -20,6 +20,41 @@
   `AppModule.Run`. Repair applies the change; `pbi-linux doctor` reports it as
   `desktop-instances`. Profiles not yet repaired keep the environment variables.
 
+- Keep the session alive for a Desktop that Desktop started itself. The session
+  counted only the Desktop processes it had started, so with the manager fix
+  above a second report opened from Desktop was stopped, with any unsaved work,
+  about ten seconds after the first Desktop closed; a restart from Desktop ended
+  the same way. The session now ends when no Desktop of its prefix is left.
+
+- Let a second `pbi-linux open` wait for the first instead of failing with
+  "Another maintenance operation is running" when two reports are opened
+  together or during a cold start. Maintenance and launch still exclude each
+  other at once. The first theme write no longer delays the first report
+  (about 0.3 s on the test host).
+
+- Stop `pbi-linux update` from replacing a newer or locally built runtime with
+  the published one unasked. It now refuses, names the installed version and
+  offers `--published`; an older published runtime is still updated as before.
+
+- Explain a checksum failure of the automatic Power BI download: Microsoft
+  serves each new build at the same address, so setup now says that the pinned
+  version is no longer there and how to continue, instead of naming a temporary
+  file.
+
+- Deliver WebView frames of any shape up to 7680 x 4320 pixels in area. Frames
+  wider than 4096 or taller than 2304 pixels were rejected without a log line,
+  which left Desktop blank on a 5120 x 1440 output. A larger frame is now
+  reported once in the session log. A publisher also waits up to 50 ms for the
+  frame lock instead of dropping the frame at once, and the receiver holds the
+  lock for the copy alone: 11 and 18 frames were dropped while a report opened
+  before, none after. Both need a rebuilt runtime.
+
+- Select package and export sources through one list (`tools/source_tree.py`)
+  for the DEB, RPM and source export. After a `makepkg` run its work directories
+  and built package aborted DEB staging on their symlinks and entered the RPM
+  source archive and the export. The Arch guide now rebuilds with `makepkg -sif`:
+  without `-f`, makepkg reinstalled the package built before the pull.
+
 - Accept Arch Linux and Omarchy as experimental platforms and add a source
   `PKGBUILD`. Correct four Wine defects found on a two-monitor Hyprland desktop:
   lost monitor placement for single-mode outputs (blank window), an abort of the

@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import signal
 import socket
@@ -85,10 +86,41 @@ def request(paths, filename, diagnostics=False):
         return value
 
 
+def desktop_running(prefix, processes=Path('/proc')):
+    """True while a PBIDesktop process of this prefix exists, whoever started it.
+
+    Desktop starts another Desktop itself for File > Open with a report already
+    open, for a recent file and for a restart; the broker never sees those start.
+    """
+    marker = b'WINEPREFIX=' + str(prefix).encode()
+    for process in processes.iterdir():
+        if not process.name.isdigit():
+            continue
+        try:
+            # Wine shows the Windows path as the command line; the loader's own
+            # arguments (wine PBIDesktop.exe ...) are visible until it does.
+            arguments = (process / 'cmdline').read_bytes().split(b'\0')[:2]
+            if not any(re.split(rb'[\\/]', value)[-1].lower() == b'pbidesktop.exe' for value in arguments):
+                continue
+            if marker in (process / 'environ').read_bytes().split(b'\0'):
+                return True
+        except OSError:
+            continue  # Gone, or another user's process.
+    return False
+
+
+# A launch holds its lock while the session starts (15 s) and answers (20 s).
+LAUNCH_WAIT = 40
+
+
 def open_file(paths, value, diagnostics=False):
     filename = file_argument(value)
     unit = session_unit(paths.data)
-    with paths.lock('maintenance'):
+    # Two reports opened together (several files selected, a second double-click
+    # during a cold start) take turns: the second waits for the first to bring the
+    # session up instead of being refused as if maintenance were running. Maintenance
+    # itself still excludes a launch at once, in both directions.
+    with paths.lock('launch', wait=LAUNCH_WAIT), paths.lock('maintenance'):
         if paths.maintenance.exists():
             raise Error('In-place maintenance did not finish. Run repair or repeat update '
                         'before opening Power BI; no automatic rollback is available.')
@@ -177,7 +209,9 @@ def broker(paths, diagnostics=False):
             idle_since = time.monotonic()
             while True:
                 children = [c for c in children if c.poll() is None]
-                if children:
+                # A Desktop that Desktop started itself keeps the session alive too:
+                # ending it would stop the Wine server under a report with unsaved work.
+                if children or (started and desktop_running(prefix)):
                     idle_since = time.monotonic()
                 elif time.monotonic()-idle_since > (10 if started else 30):
                     break
@@ -228,5 +262,5 @@ def broker(paths, diagnostics=False):
                 # The cgroup still provides the bounded final cleanup.
                 pass
             signal.signal(signal.SIGTERM, previous_term)
-    # Once the last tracked Desktop exits, systemd stops this service's remaining
+    # Once the last Desktop of this prefix exits, systemd stops this service's remaining
     # processes. Other prefixes and services are outside its control group.

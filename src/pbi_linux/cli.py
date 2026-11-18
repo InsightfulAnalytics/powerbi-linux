@@ -153,6 +153,8 @@ def parser():
     update = sub.add_parser('update', help='Update the runtime in place, without snapshots or rollback')
     update.add_argument('--runtime', help='Runtime archive (defaults to the published release)')
     update.add_argument('--runtime-sha256', help='SHA-256 of the runtime archive (required with --runtime)')
+    update.add_argument('--published', action='store_true',
+                        help='Install the published runtime even over a newer or locally built one')
     sub.add_parser('rollback', help='Unavailable: snapshots and rollback are no longer provided')
     uninstall = sub.add_parser('uninstall', help='Remove per-user desktop integration; preserve data by default')
     uninstall.add_argument('--purge', action='store_true', help='Delete managed prefixes, runtime, cache and settings')

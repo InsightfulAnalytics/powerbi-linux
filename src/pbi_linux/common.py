@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 import subprocess
 import tempfile
+import time
 
 class Error(Exception):
     pass
@@ -22,9 +23,13 @@ def digest(path):
     return h.hexdigest()
 
 
+class ChecksumError(Error):
+    pass
+
+
 def check_digest(path, expected):
     if not re.fullmatch('[a-f0-9]{64}', expected or '') or digest(path) != expected:
-        raise Error('Checksum verification failed: ' + Path(path).name)
+        raise ChecksumError('Checksum verification failed: ' + Path(path).name)
 
 
 def read_json(path):
@@ -79,14 +84,20 @@ class Paths:
             directory.mkdir(parents=True, exist_ok=True, mode=0o700)
 
     @contextlib.contextmanager
-    def lock(self, name='maintenance'):
+    def lock(self, name='maintenance', wait=0):
+        """Hold an exclusive lock; wait up to that many seconds for its current holder."""
         self.create()
         with (self.session / (name + '.lock')).open('a') as lock:
             os.chmod(lock.name, 0o600)
-            try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            except BlockingIOError as exc:
-                raise Error('Another ' + name + ' operation is running') from exc
+            deadline = time.monotonic() + wait
+            while True:
+                try:
+                    fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    break
+                except BlockingIOError as exc:
+                    if time.monotonic() >= deadline:
+                        raise Error('Another ' + name + ' operation is running') from exc
+                    time.sleep(.05)
             yield
 
 
