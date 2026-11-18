@@ -27,7 +27,8 @@ WINE_PATCHES = ('wine-11.18-composition.patch','wine-11.18-oledb32-variant.patch
                 'wine-11.18-queue-masks-after-internal.patch',
                 'wine-11.18-wayland-fixed-dialog-maximized.patch',
                 'wine-11.18-wayland-keep-toplevel-state.patch',
-                'wine-11.18-wayland-unmaximize-restore-size.patch')
+                'wine-11.18-wayland-unmaximize-restore-size.patch',
+                'wine-11.18-named-pipe-directory.patch')
 
 
 def preparation_matches(marker, expected):

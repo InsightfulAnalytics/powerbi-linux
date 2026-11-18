@@ -4,6 +4,7 @@
   "wine-11.18-composition.patch": "1898642d04d9f6f0fcdbd46a9c8caed90339de69fc282f244478398a0f899778",
   "wine-11.18-cursor-resource.patch": "db38c2d9ad6ec2e3c313bcc0a35e9d764896473419b80c507bfcd4c5ba0e0546",
   "wine-11.18-jscript-int64.patch": "baa1e7247957c9c7fa0b740066f11b971edae2329a8b667d357dc49935e524f7",
+  "wine-11.18-named-pipe-directory.patch": "51762b8e9bb74254ff5f14cfeede9be6e5eac259da3f84bdf22206114e7cc989",
   "wine-11.18-oleaut32-max-date.patch": "293cbc1b75f45a89b897c8c47d4f798b7c55820e28223faece30155e52e6c337",
   "wine-11.18-oledb32-variant.patch": "903661c96a17113a1a6a10d281bfda896c0ea6eb51636299e4ae9b766facf39c",
   "wine-11.18-queue-masks-after-internal.patch": "e35657c3856c9a6f163c0d4c05b7b68bd3f758130366a21a88f37bb025019928",
