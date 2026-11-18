@@ -180,3 +180,10 @@ Limits:
 - The error report was triggered by sending the report page's error message to
   the host with one argument missing. Desktop's own handling of that error is
   what the dialog reports.
+- The error report does not always settle at 462 x 244. Counting the first
+  three openings of four fresh sessions, it settled at 640 x 224 in 4 of 12
+  with this patch alone and in 5 of 12 with the later driver patches: the same
+  content on fewer lines. 640 is the width of the page laid out in a wide
+  window (the message has a maximum width of 600 pixels), 462 its width laid
+  out in the initial 2 x 2 window. What gives the page a wide window in those
+  openings was not established.
