@@ -4,6 +4,14 @@
 
 ### Unreleased — product repository and upstream review
 
+- List the pipes of the named pipe root directory, `\\.\pipe\`. Wine failed
+  every listing of it with `STATUS_BAD_DEVICE_TYPE`, so tools that find a
+  program by the name of its pipe saw nothing: the pbir CLI reported no running
+  Desktop, and `pbir desktop` and `pbir model -q` could not reach the open
+  report. `tools/test-pipe-directory.py` checks the listing in a disposable
+  prefix and joins the components suite. Needs a rebuilt runtime. See
+  [named pipes](docs/reference/named-pipes.md).
+
 - Port the guarded recipe to Power BI Desktop 2.159.1231.0, which Microsoft has
   served at the pinned address since November 2, 2026, and make it the default.
   Releases pinning 2.159.883.0 fail the automatic download with a checksum error.
