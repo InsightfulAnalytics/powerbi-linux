@@ -42,6 +42,7 @@ and [Edit Permissions](permissions-wayland.md).
 | Browser title tooltips | Render HTML/SVG title tips inside WebView instead of detached native windows; preserve rich data tooltip handlers | Guarded local report-view HTML change; same-origin visual frames included; [scope](intermittent-popup.md) |
 | Email dialog serializer | Serialize the three wire fields without traversing native host/button objects when Continue reads the view model | Guarded local resource change; native validation/authentication unchanged; browser sign-in and account persistence after normal restart confirmed on Fedora |
 | Edit Permissions serializer | Serialize the 13 original wire fields without native host/button objects when OK pulls the view model | Guarded local resource change; privacy/encryption callbacks retained; synthetic compositor OK/Cancel/reopen passed |
+| Auto recovery dialog serializer | Serialize the description and radio group state without traversing the native host object when OK reads the view model, so Desktop can close with unopened recovered files | Guarded local resource change, 2.159.1231.0 only; original keep/delete handlers retained; keep, delete and no-file closes passed on one Hyprland host |
 
 `WinRTStubs` reports APIs unavailable and contains incomplete methods; it does not implement Windows storage/launch contracts. No broader WinRT support is claimed. The self-token workaround is not equivalent to anonymous Windows identity.
 

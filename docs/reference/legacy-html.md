@@ -255,3 +255,64 @@ Limits:
   off instead; nothing in this dialog comes near that height.
 - Other dialogs with the same body rule were not examined for the same five
   pixels.
+
+## Desktop would not close: Auto recovery dialog, 2026-11-21
+
+Observed on the Hyprland host with Desktop 2.159.1231.0. Closing Desktop while
+AutoRecovery held a recovered file that was never opened showed "Auto
+recovery" ("There are recovered files that haven't been opened..."). OK did
+nothing with either choice. Cancel and the close button cancelled the close,
+and the next close showed the dialog again, so Desktop could not be closed
+except by stopping the session.
+
+### Diagnosis
+
+- The dialog is a legacy HTML floating dialog
+  (`FloatingDialog.AutoRecoveryKeepOrDeleteDialog`, its script an embedded
+  resource of `Microsoft.PowerBI.Client.Windows.dll`). Its main thread
+  answered `WM_NULL` at once, and clicks reached the page: a posted click
+  selected the other radio button.
+- OK makes the host read the page's view model (`KoFloatingDialog.getViewModel`).
+  This view model has no `getJSON`, so the page falls back to `ko.toJSON`.
+  Knockout walks every enumerable property, including inherited ones, and the
+  `_typedHost` getter of `KoFloatingDialogViewModel` returns the .NET host
+  object.
+- With `warn+jscript`, OK raised `0x8002000e` (`DISP_E_BADPARAMCOUNT`) with
+  the stack `_typedHost`, `performance`, `mark`: Wine's JScript enumerates the
+  host object's members and reads the `mark` method as a property. The
+  exception ends the OK handler. This is the failure the email and Edit
+  Permissions serializers already work around.
+- The host deserializes the result and reads only
+  `keepOrDeleteRecoveredFilesRadioGroup.state`; `delete` removes the files.
+
+### Correction
+
+The recipe gives this view model a `getJSON` that serializes plain values only:
+the description and the radio group's name, label and state. It is a
+size-preserving change to the embedded script, guarded by the original and
+patched resource hashes (`a86f3f8f...`, `511d75f7...`); the indentation below
+the module marker and the source map comment make room for it. It is applied to
+**2.159.1231.0 only**, the one build whose assembly was available.
+`pbi-linux doctor` reports it as `auto-recovery-dialog`; `pbi-linux repair`
+applies it.
+
+### Evidence
+
+Production session after `pbi-linux repair`, Desktop closed with `WM_CLOSE`
+and OK clicked with posted mouse messages:
+
+| Check | Before | With the correction |
+|---|---|---|
+| OK, "No, remove the files" | Dialog stays open | Desktop exited 3 s later; the recovered file was removed |
+| OK, "Yes, I want to view the files later" | Dialog stays open | Desktop exited 2 s later; the recovered file was kept |
+| Close with no recovered file | Not tested | No dialog; Desktop exited 7 s later |
+| `tools/test-powerbi-recipe.py --version 2.159.1231.0` | Not run | Passed, same length |
+
+Limits:
+
+- One host and one Desktop build. 2.158.1177.0 and 2.159.883.0 keep the
+  original script.
+- Other floating dialogs whose view model has no `getJSON` may fail the same
+  way on OK; they were not surveyed.
+- The dialog opened on the focused workspace rather than with Desktop's main
+  window, as other dialogs of this family do on Hyprland. That is not changed.
