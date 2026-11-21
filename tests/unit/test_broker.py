@@ -36,11 +36,12 @@ class BrokerTests(unittest.TestCase):
         (self.prefix / 'drive_c/Program Files/Microsoft Power BI Desktop/bin').mkdir(parents=True)
         self.report = root / 'My report & ü.pbix'
         self.report.write_bytes(b'report')
-        self.desktops, self.wineserver = [], []
+        self.desktops, self.wineserver, self.commands, self.desktop_env = [], [], [], []
         self.offset = 0.0
 
-    def run_broker(self, client):
+    def run_broker(self, client, diagnostics=False):
         def popen(args, **kwargs):
+            self.desktop_env.append(kwargs.get('env') or {})
             process = subprocess.Popen(['sleep', '60'], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             self.desktops.append(process)
             return process
@@ -66,13 +67,17 @@ class BrokerTests(unittest.TestCase):
         thread = threading.Thread(target=drive, daemon=True)
         with patch.object(launch, 'active', return_value=installation), \
                 patch.object(launch, 'environment', return_value={'WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS': '', 'WINEDEBUG': '-all'}), \
-                patch.object(launch, 'run', return_value='Z:\\report.pbix\n'), \
+                patch.object(launch, 'run', side_effect=self.record), \
                 patch.object(launch, 'subprocess', fake), patch.object(launch, 'time', clock):
             thread.start()
-            launch.broker(self.paths)
+            launch.broker(self.paths, diagnostics)
         thread.join(10)
         self.assertNotIn('error', result, result.get('error'))
         return result['client']
+
+    def record(self, args, **kwargs):
+        self.commands.append([str(arg) for arg in args])
+        return 'Z:\\report.pbix\n'
 
     def send(self, payload, *, wait=True):
         with socket.socket(socket.AF_UNIX) as sock:
@@ -117,6 +122,21 @@ class BrokerTests(unittest.TestCase):
         def client():
             return (self.paths.socket.stat().st_mode & 0o777, self.paths.session.stat().st_mode & 0o777)
         self.assertEqual(self.run_broker(client), (0o600, 0o700))
+
+    def devtools_ports(self, diagnostics):
+        def client():
+            return launch.request(self.paths, str(self.report), diagnostics)['ok']
+        self.assertTrue(self.run_broker(client, diagnostics))
+        seen = [' '.join(command) for command in self.commands]
+        seen += [env.get('WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS', '') for env in self.desktop_env]
+        return [text for text in seen if 'remote-debugging' in text]
+
+    def test_a_normal_session_opens_no_devtools_port(self):
+        # Neither the WebView2 policy written at session start nor Desktop's environment.
+        self.assertEqual(self.devtools_ports(False), [])
+
+    def test_only_diagnostics_open_a_devtools_port(self):
+        self.assertNotEqual(self.devtools_ports(True), [])
 
 
 if __name__ == '__main__':
