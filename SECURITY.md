@@ -7,3 +7,5 @@ Use verified release checksums and authorized Microsoft installers. A checksum s
 Desktop's embedded browser (WebView2) is the fixed version pinned in the release recipe, and Desktop's own update notices are turned off. It receives Chromium security fixes only when a project release updates that pin, and under Wine its renderer sandbox does not isolate it. Custom visuals in a report are web code from the report's author: open reports from sources you trust.
 
 Supported security fixes initially target the current project runtime on Fedora 44 x86_64. Experimental builds have no compatibility guarantee. Dependency notices, source provenance and integrity checks accompany releases.
+
+The rules every change to this project must keep, each tied to a test, are in [SECURITY-RULES.md](SECURITY-RULES.md).

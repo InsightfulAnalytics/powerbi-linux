@@ -4,6 +4,13 @@
 
 ### Unreleased — product repository and upstream review
 
+- Add `SECURITY-RULES.md`: six rules every change must keep (session reachable
+  only by its user, checksummed downloads, no DevTools port outside
+  diagnostics, contained archive extraction, Microsoft files changed only at
+  known checksums, packages only from checked main), each tied to a test that
+  fails when the rule is broken. New tests check that a normal session opens
+  no DevTools port.
+
 - Let OK work in every legacy HTML dialog that has no serializer of its own.
   The two shared dialog scripts serialized the view model with `ko.toJSON`,
   which walked into the .NET host object and failed under Wine's JScript, so
