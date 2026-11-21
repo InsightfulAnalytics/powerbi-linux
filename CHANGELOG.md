@@ -4,6 +4,47 @@
 
 ### Unreleased — product repository and upstream review
 
+- Let OK work in every legacy HTML dialog that has no serializer of its own.
+  The two shared dialog scripts serialized the view model with `ko.toJSON`,
+  which walked into the .NET host object and failed under Wine's JScript, so
+  OK did nothing in Export template, Options, View as, the connector warnings,
+  the storage mode and DirectQuery choices and about a dozen more. A guarded
+  resource change gives both scripts a walker that skips non-JScript objects,
+  for 2.159.1231.0. Repair applies it; `pbi-linux doctor` reports it as
+  `dialog-serializers`. See [legacy HTML dialogs](docs/reference/legacy-html.md#ok-did-nothing-in-most-legacy-dialogs-2026-11-21).
+
+- Add `pbi-linux stop` and a "Force quit Power BI" desktop action for a Desktop
+  that cannot be closed. It stops the session, ends the Wine server and any
+  leftover Power BI process, and waits for a repair or update still running.
+
+- Keep every open report when one client misbehaves. A `pbi-linux open` that
+  was interrupted before its answer, or a malformed request, ended the session
+  broker, which then stopped the Wine server and closed every open report. The
+  session unit keeps running after an out-of-memory kill of one process
+  (`OOMPolicy=continue`). A session lock is held until the Wine server has
+  gone, and the next launch, repair and update wait for it instead of racing a
+  closing Desktop.
+
+- Rename the PE section cache at the next open when only the file's device
+  number changed. Btrfs numbers subvolumes when they are mounted, so every
+  reboot made the cache stale and `doctor` reported it. Files of earlier
+  identities are deleted.
+
+- Recover from damaged downloads and copies instead of failing setup until the
+  cache is cleared by hand. Original Desktop files are backed up atomically,
+  and a Desktop configuration that does not parse as XML is refused before it
+  is patched.
+
+- `pbi-linux doctor` reports WebView2 on its own line and keeps checking after
+  one check fails. A broken `settings.json` is named in the error, and
+  `pbi-linux profile <preset>` resets it.
+
+- Hardening: the session runs Python with `-P`; the installed launcher never
+  loads code from the source tree of a checkout; packages normalise file
+  modes; a link Desktop opens starts the browser in its own scope without the
+  Wine environment; `--diagnostics` warns that its DevTools port is open to
+  every local program.
+
 - Let OK in the "Auto recovery" dialog close Desktop. Closing Desktop with a
   recovered file that was never opened shows this legacy HTML dialog; under Wine
   its OK did nothing (`DISP_E_BADPARAMCOUNT` while the page serialized the .NET

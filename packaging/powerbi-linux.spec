@@ -56,6 +56,7 @@ install -m 0644 packaging/powerbi-linux.svg %{buildroot}%{_datadir}/icons/hicolo
 find %{buildroot} -type d -name __pycache__ -prune -exec rm -rf {} +
 
 %files
+%defattr(-,root,root,0755)
 %license LICENSE LICENSES/
 %doc README.md docs/
 %{_bindir}/pbi-linux

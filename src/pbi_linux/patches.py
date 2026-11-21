@@ -4,8 +4,9 @@ import hashlib
 import re
 from pathlib import Path
 import shutil
+import xml.etree.ElementTree as ElementTree
 from .common import Error, check_digest, digest, run, wine_env
-from . import autorecovery, legacy_html, signin, text_pickers, tooltips
+from . import autorecovery, dialog_serializers, legacy_html, signin, text_pickers, tooltips
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
@@ -29,6 +30,13 @@ ORIGINALS_2159_1231 = {
 }
 RECIPES = {'2.158.1177.0': ORIGINALS, '2.159.883.0': CURRENT_ORIGINALS,
            '2.159.1231.0': ORIGINALS_2159_1231}
+
+
+def ui_patched_hash(version):
+    """The complete Microsoft.Mashup.Client.UI.dll that setup and repair write."""
+    if version == '2.159.1231.0':
+        return dialog_serializers.UI_2159_1231_PATCHED_SHA256
+    return legacy_html.patched_hash(version)
 
 
 def originals_for(desktop_sha256):
@@ -56,6 +64,7 @@ def patch_config(source):
     AppModule.Run. Every PBIDesktop.exe start reads this file; no other
     program does, so Desktop's other .NET children stay as they were.
     """
+    _require_xml(source, 'Incomplete or damaged Desktop configuration; reinstall Power BI Desktop')
     if b'appDomainManager' in source:
         raise Error('Unexpected AppDomain manager in the Desktop configuration')
     match = re.search(rb'<runtime>(\r?\n)', source)
@@ -64,7 +73,31 @@ def patch_config(source):
     newline = match.group(1)
     elements = (b'    <appDomainManagerAssembly value="' + MANAGER_ASSEMBLY.encode() + b'" />' + newline +
                 b'    <appDomainManagerType value="' + MANAGER_TYPE.encode() + b'" />' + newline)
-    return source[:match.end()] + elements + source[match.end():]
+    patched = source[:match.end()] + elements + source[match.end():]
+    _require_xml(patched, 'Unexpected Desktop configuration patch output')
+    return patched
+
+
+def _require_xml(data, message):
+    # The configuration has no recipe hash, unlike the assemblies. A short copy
+    # (an interrupted backup) still has its <runtime> line but no longer parses.
+    try:
+        ElementTree.fromstring(data)
+    except ElementTree.ParseError as exc:
+        raise Error(message) from exc
+
+
+def _backup(source, backup):
+    """Copy an original under a temporary name first, then rename it.
+
+    Every later repair reads the backup instead of bin. A copy cut short (a full
+    disk, Ctrl-C, a closed terminal) under the final name would be taken for the
+    original and break each repair after it.
+    """
+    backup.parent.mkdir(parents=True, exist_ok=True)
+    partial = backup.with_name(backup.name + '.partial')
+    shutil.copy2(source, partial)
+    os.replace(partial, backup)
 
 
 def build_native_dialog(helpers, wine, env, log, key):
@@ -173,6 +206,9 @@ def install(prefix, runtime, log):
     if not ui_source.exists():
         ui_source = bin_dir / ui_name
     patched_ui = legacy_html.patch_ui(ui_source.read_bytes())
+    if originals is ORIGINALS_2159_1231:
+        # Verified on 2.159.1231.0 only, like the Auto recovery dialog below.
+        patched_ui = dialog_serializers.patch_ui(patched_ui)
     windows_name = 'Microsoft.PowerBI.Client.Windows.dll'
     windows_source = backups / windows_name
     if not windows_source.exists():
@@ -197,8 +233,7 @@ def install(prefix, runtime, log):
     for name in (*originals, picker_name, DESKTOP_CONFIG):
         backup = backups / name
         if not backup.exists():
-            backup.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(bin_dir / name, backup)
+            _backup(bin_dir / name, backup)
     helpers = prefix / 'drive_c/powerbi-linux-setup'
     helpers.mkdir(exist_ok=True)
     for source in (runtime / 'helpers').iterdir():

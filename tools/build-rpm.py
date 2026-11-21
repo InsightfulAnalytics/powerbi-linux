@@ -13,7 +13,12 @@ SOURCES=('src','runtime','connectors','packaging','docs','tests','tools','.githu
 TOP='powerbi-linux-0.1.0'
 def member(info):
     # The spec copies packaging/ whole, so makepkg output and local files stop here.
-    return None if excluded(ROOT/Path(info.name).relative_to(TOP)) else info
+    if excluded(ROOT/Path(info.name).relative_to(TOP)):
+        return None
+    # The spec installs with cp -a. Modes as the checkout reports them (0777 on
+    # some mounts) would make the installed code writable by every local user.
+    info.mode = 0o755 if info.isdir() or info.mode & 0o111 else 0o644
+    return info
 p=argparse.ArgumentParser()
 p.add_argument('--engine',choices=['docker','podman'],default='docker')
 p.add_argument('--local',action='store_true')

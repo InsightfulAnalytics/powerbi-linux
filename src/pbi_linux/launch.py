@@ -10,7 +10,7 @@ import socket
 import subprocess
 import sys
 import time
-from .common import Error, Paths, busy, installation_token, check_digest, read_json, run
+from .common import Error, Paths, busy, installation_token, check_digest, read_json, run, wine_processes
 from .provision import active, BIN, settings, verified_webview
 from .theme import ThemeSync
 from . import patches, pe_cache, resources, platforms
@@ -59,7 +59,7 @@ def environment(paths, installation):
     browser=verified_webview(prefix,runtime)
     if browser.parent.parent.name=='powerbi-linux-webview':
         env['WEBVIEW2_BROWSER_EXECUTABLE_FOLDER']='C:\\powerbi-linux-webview\\'+browser.parent.name
-    if pe_cache.valid(browser, cache):
+    if pe_cache.refresh(browser, cache):
         env['PBI_PE_SECTION_CACHE'] = str(cache)
     else:
         # Missing or stale backing must never be used, and open never rebuilds it.
@@ -69,17 +69,23 @@ def environment(paths, installation):
     return env
 
 
+STUCK_HELP = 'If Power BI is stuck, run pbi-linux stop to force it to quit (unsaved changes are lost)'
+
+
 def request(paths, filename, diagnostics=False):
     with socket.socket(socket.AF_UNIX) as sock:
         sock.settimeout(20)
         sock.connect(str(paths.socket))
-        sock.sendall(json.dumps({'file':filename,'diagnostics':diagnostics}).encode() + b'\n')
-        response = bytearray()
-        while not response.endswith(b'\n'):
-            chunk = sock.recv(4096)
-            if not chunk or len(response) > 65536:
-                raise Error('Invalid session response')
-            response.extend(chunk)
+        try:
+            sock.sendall(json.dumps({'file':filename,'diagnostics':diagnostics}).encode() + b'\n')
+            response = bytearray()
+            while not response.endswith(b'\n'):
+                chunk = sock.recv(4096)
+                if not chunk or len(response) > 65536:
+                    raise Error('Invalid session response')
+                response.extend(chunk)
+        except (TimeoutError, ConnectionResetError, BrokenPipeError) as exc:
+            raise Error('The Power BI session did not answer. Try again in a few seconds. ' + STUCK_HELP) from exc
         value = json.loads(response)
         if not value.get('ok'):
             raise Error(value.get('error', 'Power BI launch failed'))
@@ -109,8 +115,77 @@ def desktop_running(prefix, processes=Path('/proc')):
     return False
 
 
-# A launch holds its lock while the session starts (15 s) and answers (20 s).
-LAUNCH_WAIT = 40
+# A launch holds its lock while a closing session finishes (SESSION_WAIT), the
+# next one starts (START_WAIT) and answers (20 s).
+SESSION_WAIT = 20
+START_WAIT = 45
+LAUNCH_WAIT = SESSION_WAIT + START_WAIT + 20
+# How long stop lets Wine shut down cleanly before it kills what is left.
+STOP_WAIT = 10
+
+
+def wait_for_closing_session(paths):
+    """Let a broker that is still shutting Wine down finish first.
+
+    The broker holds the session lock for its whole life. Its last step kills
+    the prefix's Wine server, which would also kill Wine processes started for
+    a new session or for maintenance in those seconds.
+    """
+    try:
+        with paths.lock('session', wait=SESSION_WAIT):
+            pass
+    except Error as exc:
+        raise Error('Power BI is still closing. Try again in a few seconds. ' + STUCK_HELP) from exc
+
+
+def stop(paths):
+    """Force-quit this installation's Power BI: every window closes without saving."""
+    try:
+        with paths.lock('maintenance', wait=5):
+            _stop(paths)
+    except Error as exc:
+        if str(exc) != 'Another maintenance operation is running':
+            raise
+        raise Error('A repair, update or session start is still running; '
+                    'wait for it to finish, then run pbi-linux stop again') from exc
+
+
+def _stop(paths):
+    unit = session_unit(paths.data)
+    stopped = subprocess.run(['systemctl', '--user', 'stop', unit], capture_output=True, text=True, timeout=60)
+    # 5: no such unit. Any other failure: still end the Wine processes below.
+    problem = '' if stopped.returncode in (0, 5) else (stopped.stderr.strip() or 'systemctl failed')
+    # Wine started outside the session (an interrupted repair, a manual run).
+    for profile_prefix, runtime in leftover_prefixes(paths):
+        env = dict(os.environ, WINEPREFIX=str(profile_prefix))
+        subprocess.run([runtime/'bin/wineserver', '-k'], env=env, stdout=subprocess.DEVNULL,
+                       stderr=subprocess.DEVNULL, timeout=10)
+    deadline = time.monotonic() + STOP_WAIT
+    while busy(paths) and time.monotonic() < deadline:
+        time.sleep(.2)
+    for pid in wine_processes(paths):
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+    deadline = time.monotonic() + min(5, STOP_WAIT)
+    while busy(paths) and time.monotonic() < deadline:
+        time.sleep(.2)
+    if busy(paths):
+        raise Error('Some Power BI processes are still running' + (' (' + unit + ': ' + problem + ')' if problem else '') +
+                    '; log out and back in to end them')
+    if not problem:
+        paths.socket.unlink(missing_ok=True)
+
+
+def leftover_prefixes(paths):
+    """(prefix, runtime) for each managed prefix that still has Wine processes."""
+    try:
+        installation = active(paths)
+    except (Error, OSError):
+        return []
+    prefix, runtime = Path(installation['prefix']), Path(installation['runtime'])
+    return [(prefix, runtime)] if busy(paths) and (runtime/'bin/wineserver').exists() else []
 
 
 def open_file(paths, value, diagnostics=False):
@@ -134,8 +209,10 @@ def open_file(paths, value, diagnostics=False):
                 return request(paths, filename, diagnostics)
             except (ConnectionRefusedError, FileNotFoundError):
                 paths.socket.unlink(missing_ok=True)
+        wait_for_closing_session(paths)
         if busy(paths):
-            raise Error('This installation already has Wine processes without a reachable session. Close its Power BI windows before reopening')
+            raise Error('This installation already has Wine processes without a reachable session. '
+                        'Close its Power BI windows before reopening. ' + STUCK_HELP)
         supported, detail = platforms.status()
         if not supported:
             raise Error(detail)
@@ -150,31 +227,47 @@ def open_file(paths, value, diagnostics=False):
         config = settings(paths)
         # Forward only graphical session variables to the service; its process does not
         # inherit arbitrary WINEPREFIX, debugging or diagnostic overrides.
+        # OOMPolicy=continue: the kernel killing one renderer or container for memory
+        # must not stop the whole session and every open report with it.
         command = ['systemd-run', '--user', '--unit='+unit, '--collect',
-                   '-p', 'Type=exec', '-p', 'KillMode=mixed', '-p', 'TimeoutStopSec=10s', '-p', 'TimeoutAbortSec=1s', '-p', 'LimitCORE=0']
+                   '-p', 'Type=exec', '-p', 'KillMode=mixed', '-p', 'TimeoutStopSec=10s', '-p', 'TimeoutAbortSec=1s', '-p', 'LimitCORE=0',
+                   '-p', 'OOMPolicy=continue']
         for prop in resources.service_properties(config):
             command += ['-p', prop]
         for name in ('PATH','WAYLAND_DISPLAY','DBUS_SESSION_BUS_ADDRESS','XDG_RUNTIME_DIR','XDG_DATA_HOME','XDG_CONFIG_HOME','XDG_STATE_HOME','XDG_CACHE_HOME','XDG_CURRENT_DESKTOP','PBI_LINUX_RESOURCE_DIR'):
             if name in os.environ:
                 command.append('--setenv='+name+'='+os.environ[name])
         command.append('--setenv=PYTHONPATH='+str(Path(__file__).resolve().parent.parent))
-        command += [sys.executable, '-m', 'pbi_linux', '_session']
+        # -P: the service runs in the home folder; a stray json.py there must not load first.
+        command += [sys.executable, '-P', '-m', 'pbi_linux', '_session']
         if diagnostics:
             command.append('--diagnostics')
         run(command)
-        deadline = time.monotonic()+15
+        # The broker verifies the installation (about 1.5 GB of hashes) before it
+        # listens; a slow or cold disk needs more than a few seconds.
+        deadline = time.monotonic()+START_WAIT
         while time.monotonic() < deadline:
             if paths.socket.exists():
                 try:
                     return request(paths, filename, diagnostics)
                 except (ConnectionRefusedError, FileNotFoundError):
                     pass
+            elif subprocess.run(['systemctl', '--user', 'is-active', '--quiet', unit], timeout=10).returncode:
+                # The broker already exited (a failed check); --collect removed the unit.
+                raise Error('Session stopped while starting; see journalctl --user -u ' + unit +
+                            '. If it reports a checksum error, run pbi-linux repair')
             time.sleep(.1)
         raise Error('Session could not start; see journalctl --user -u '+unit)
 
 
 def broker(paths, diagnostics=False):
     paths.create()
+    # Held until this broker has stopped its Wine server; see wait_for_closing_session.
+    with paths.lock('session', wait=SESSION_WAIT):
+        _broker(paths, diagnostics)
+
+
+def _broker(paths, diagnostics):
     installation = active(paths)
     env = environment(paths, installation)
     prefix, runtime = Path(installation['prefix']), Path(installation['runtime'])
@@ -217,7 +310,7 @@ def broker(paths, diagnostics=False):
                     break
                 try:
                     client, _ = server.accept()
-                except socket.timeout:
+                except OSError:  # The 1 s timeout, or a transient accept failure.
                     continue
                 with client:
                     client.settimeout(5)
@@ -244,9 +337,14 @@ def broker(paths, diagnostics=False):
                         started = True
                         idle_since = time.monotonic()
                         answer = {'ok':True, 'pid':child.pid}
-                    except (Error, ValueError, OSError) as exc:
-                        answer = {'ok':False, 'error':str(exc)}
-                    client.sendall(json.dumps(answer).encode()+b'\n')
+                    except Exception as exc:  # noqa: BLE001 - one bad request must not end the session
+                        answer = {'ok':False, 'error':str(exc) or type(exc).__name__}
+                    try:
+                        client.sendall(json.dumps(answer).encode()+b'\n')
+                    except OSError:
+                        # The client gave up (Ctrl+C, its timeout). Leaving the loop here
+                        # would stop the Wine server under every open report.
+                        pass
         finally:
             theme_sync.close()
             paths.socket.unlink(missing_ok=True)
