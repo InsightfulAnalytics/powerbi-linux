@@ -5,8 +5,11 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / 'src'))
+from pbi_linux import cli, common, launch
 
 
 class LauncherTests(unittest.TestCase):
@@ -31,6 +34,22 @@ class LauncherTests(unittest.TestCase):
     def test_an_installed_launcher_ignores_a_neighbouring_src(self):
         # /usr/bin/pbi-linux must never load /usr/src/pbi_linux.
         self.assertNotIn('PLANTED', self.run_launcher('bin'))
+
+
+class DesktopErrorTests(unittest.TestCase):
+    def test_desktop_errors_are_plain_text(self):
+        # A report's file name reaches the error text; zenity must not read it as markup (links).
+        name = '<a href="https://example.invalid">report</a>.pbix'
+        calls = []
+        def run(args, **kwargs):
+            calls.append(args)
+        with patch.object(launch, 'open_file', side_effect=common.Error('Not found: ' + name)), \
+                patch.object(cli.shutil, 'which', return_value='/usr/bin/zenity'), \
+                patch.object(cli.subprocess, 'run', run), patch('sys.stderr'):
+            self.assertEqual(cli.main(['open', '--desktop', name]), 1)
+        self.assertEqual(len(calls), 1)
+        self.assertIn('--no-markup', calls[0])
+        self.assertIn('--text=Not found: ' + name, calls[0])
 
 
 if __name__ == '__main__':

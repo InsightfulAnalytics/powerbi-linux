@@ -277,6 +277,6 @@ def main(argv=None):
         message = str(exc)
         print('pbi-linux: ' + message, file=sys.stderr)
         if getattr(args, 'desktop', False) and shutil.which('zenity'):
-            subprocess.run(['zenity','--error','--title=Power BI Desktop','--text='+message], capture_output=True)
+            subprocess.run(['zenity','--error','--no-markup','--title=Power BI Desktop','--text='+message], capture_output=True)
         return 1
     return 0

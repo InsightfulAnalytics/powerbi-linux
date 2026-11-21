@@ -43,7 +43,8 @@
   loads code from the source tree of a checkout; packages normalise file
   modes; a link Desktop opens starts the browser in its own scope without the
   Wine environment; `--diagnostics` warns that its DevTools port is open to
-  every local program.
+  every local program; error dialogs show their text as plain text, so a file
+  name cannot add a link to them.
 
 - Let OK in the "Auto recovery" dialog close Desktop. Closing Desktop with a
   recovered file that was never opened shows this legacy HTML dialog; under Wine
