@@ -312,7 +312,68 @@ Limits:
 
 - One host and one Desktop build. 2.158.1177.0 and 2.159.883.0 keep the
   original script.
-- Other floating dialogs whose view model has no `getJSON` may fail the same
-  way on OK; they were not surveyed.
+- Other floating dialogs whose view model has no `getJSON` failed the same
+  way on OK. The survey that followed and the shared correction are in the
+  next section.
 - The dialog opened on the focused workspace rather than with Desktop's main
   window, as other dialogs of this family do on Hyprland. That is not changed.
+
+## OK did nothing in most legacy dialogs, 2026-11-21
+
+A survey of every legacy HTML dialog after the Auto recovery incident, on
+Desktop 2.159.1231.0.
+
+### Diagnosis
+
+- Every Knockout floating dialog loads one shared script,
+  `ts/floatingdialog/kofloatingdialog.js`, and drop-down forms load
+  `ts/dropform/dropform.js`. Both are MSHTML-only resources of
+  `Microsoft.Mashup.Client.UI.dll`; WebView2 pages do not load them.
+- On OK, the host calls `getViewModel`. Without a `getJSON` of its own, the
+  view model is serialized with `ko.toJSON`. Knockout walks inherited
+  enumerable properties too: the `_typedHost` getter of
+  `KoFloatingDialogViewModel` and the `_host` of every button view model return
+  the .NET host object, a COM object. Wine's JScript enumerates its members
+  and reads each one; a method that takes arguments raises
+  `DISP_E_BADPARAMCOUNT`, which ends the OK handler.
+- About 19 dialogs reach that fallback. Among them are Options, Export
+  template, View as, the third-party and preview connector warnings, the
+  DirectQuery and storage mode choices, "Discard all query changes", import of
+  a custom visual, Edit Permissions for several sources, the Navigator
+  parameter picker and the error report's "Send details". Cancel and the close
+  button do not read the view model, so those dialogs could be cancelled but
+  not confirmed.
+
+### Correction
+
+`src/pbi_linux/dialog_serializers.py` gives both shared scripts a walker
+equivalent to `ko.toJS` that returns nothing for an object that is not a
+JScript object (`instanceof Object` is false for a COM object, and the test
+calls nothing on it). The JSON is what Windows produces minus the host
+objects, which the C# side never reads: it deserializes with
+`JavaScriptSerializer`, which ignores missing members. A view model's own
+`getJSON` still wins, so the Auto recovery, email and Edit Permissions
+serializers stay as they are. Knockout itself is unchanged.
+
+Each resource is found by a unique marker and its .NET length prefix, guarded
+by its original and patched hashes, and changed in place: leading indentation
+(and, in the drop-down form, three comments and the source map comment) make
+room for the walker. The complete assembly hash is recorded per build. It is
+applied to **2.159.1231.0 only**; `pbi-linux doctor` reports it as
+`dialog-serializers`.
+
+### Evidence
+
+| Check | Before | With the correction |
+|---|---|---|
+| File > Export > Power BI template, OK (Hyprland, QA installation) | Dialog stayed open after two clicks; Cancel closed it | Dialog closed and the Save dialog opened |
+| Walker against Desktop's own knockout and dialog scripts (Node, host simulated as a COM-like object that throws when read) | Original throws at `performance.mark` | Output equals `ko.toJSON` with host objects left out on 3000 random object graphs; the host is never read |
+| `tools/test-powerbi-recipe.py --version 2.159.1231.0` | | Passed, same length |
+
+Limits:
+
+- One host and one Desktop build. Node is not Wine's JScript: the JScript
+  behaviour relied on (`instanceof` and `typeof` on a COM object) comes from
+  the Wine 11.18 source, and the Export template run above.
+- Dialogs whose page wires its own OK (Analysis Services live connection
+  properties, the Report Server dialogs) were not resolved.

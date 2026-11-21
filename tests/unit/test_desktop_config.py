@@ -35,5 +35,27 @@ class DesktopConfigTests(unittest.TestCase):
                 patches.patch_config(source)
 
 
+    def test_a_short_copy_is_refused(self):
+        # An interrupted backup keeps the <runtime> line but no longer parses.
+        with self.assertRaisesRegex(common.Error, 'Incomplete or damaged Desktop configuration'):
+            patches.patch_config(CONFIG[:CONFIG.index(b'</runtime>')])
+
+    def test_backup_is_renamed_into_place_only_when_complete(self):
+        import tempfile
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as directory:
+            source, backup = Path(directory) / 'source', Path(directory) / 'originals' / 'name'
+            source.write_bytes(CONFIG)
+            def interrupted(src, dst):
+                Path(dst).write_bytes(CONFIG[:10])
+                raise KeyboardInterrupt
+            with patch.object(patches.shutil, 'copy2', side_effect=interrupted):
+                with self.assertRaises(KeyboardInterrupt):
+                    patches._backup(source, backup)
+            self.assertFalse(backup.exists())
+            patches._backup(source, backup)
+            self.assertEqual(backup.read_bytes(), CONFIG)
+            self.assertEqual(sorted(p.name for p in backup.parent.iterdir()), ['name'])
+
 if __name__ == '__main__':
     unittest.main()

@@ -34,6 +34,10 @@ def stage(destination):
             shutil.copytree(source, data / name, ignore=ignored)
         else:
             shutil.copy2(source, data / name)
+    # copy2 keeps the checkout's modes, which some mounts report as 0777; the
+    # installed code must not be writable by other local users.
+    for path in [data, *data.rglob('*')]:
+        path.chmod(0o755 if path.is_dir() or path.stat().st_mode & 0o111 else 0o644)
     files = [('packaging/pbi-linux', 'usr/bin/pbi-linux', 0o755),
              ('packaging/powerbi-linux.desktop', 'usr/share/applications/powerbi-linux.desktop', 0o644),
              ('packaging/powerbi-linux.xml', 'usr/share/mime/packages/powerbi-linux.xml', 0o644),

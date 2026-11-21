@@ -377,7 +377,7 @@ class ProductTests(unittest.TestCase):
         edge=self.root/'154.0.4258.53/msedge.dll'
         with patch.object(provision,'idle'), patch.object(provision,'check_digest'), \
              patch.object(provision,'webview_config',return_value=provision.webview_config()), \
-             patch.object(assets,'download',return_value=source), \
+             patch.object(assets,'download',return_value=source), patch.object(assets,'cache_copy'), \
              patch.object(provision,'install_runtime',return_value=runtime), \
              patch.object(provision,'run',side_effect=stage), patch.object(provision,'stop_server'), \
              patch.object(provision,'configure',return_value={}), \
@@ -491,7 +491,7 @@ class ProductTests(unittest.TestCase):
         with patch.dict(os.environ, {'PBI_UI_DIAGNOSTICS':'1','PBI_WAYLAND_CAPTURE_DIR':'/tmp/secret',
                  'WINELOADER':'/old/wine','WINESERVER':'/old/wineserver','WINEARCH':'win32',
                  'WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS':'--remote-debugging-port=9229'}), \
-             patch.object(launch,'verified_webview',return_value=prefix/'edge.dll'), patch.object(pe_cache,'valid',return_value=False):
+             patch.object(launch,'verified_webview',return_value=prefix/'edge.dll'), patch.object(pe_cache,'refresh',return_value=False):
             env=launch.environment(self.paths,install)
             setup_env=common.wine_env(prefix)
         self.assertNotIn('PBI_UI_DIAGNOSTICS',env)
@@ -514,7 +514,7 @@ class ProductTests(unittest.TestCase):
         config.write_bytes(b'<configuration />')
         install={'prefix':str(prefix),'runtime':str(runtime),'patches':{patches.DESKTOP_CONFIG:common.digest(config)}}
         with patch.dict(os.environ,{'APPDOMAIN_MANAGER_ASM':'Other','APPDOMAIN_MANAGER_TYPE':'Other'}), \
-             patch.object(launch,'verified_webview',return_value=prefix/'edge.dll'), patch.object(pe_cache,'valid',return_value=False):
+             patch.object(launch,'verified_webview',return_value=prefix/'edge.dll'), patch.object(pe_cache,'refresh',return_value=False):
             env=launch.environment(self.paths,install)
         self.assertNotIn('APPDOMAIN_MANAGER_ASM',env)
         self.assertNotIn('APPDOMAIN_MANAGER_TYPE',env)
@@ -586,6 +586,10 @@ class ProductTests(unittest.TestCase):
         self.assertIn('MemorySwapMax=infinity',cmd)
         self.assertFalse(any(x.startswith('CPUQuota=') for x in cmd))
         self.assertIn('KillMode=mixed',cmd)
+        # One process killed for memory must not stop every open report.
+        self.assertIn('OOMPolicy=continue',cmd)
+        # The service runs in the home folder; its own modules must load first.
+        self.assertEqual(cmd[-4],'-P')
 
 if __name__=='__main__':
     unittest.main()

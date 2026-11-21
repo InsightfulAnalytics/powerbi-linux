@@ -10,7 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from pbi_linux import autorecovery, legacy_html, patches, signin, text_pickers
+from pbi_linux import autorecovery, dialog_serializers, legacy_html, patches, signin, text_pickers
 from pbi_linux.common import Error, check_digest
 
 
@@ -25,6 +25,7 @@ def main():
     originals = patches.RECIPES[args.version]
     # The Auto recovery dialog patch is verified on 2.159.1231.0 only, as in setup.
     windows = autorecovery.patch_windows if originals is patches.ORIGINALS_2159_1231 else (lambda data: data)
+    dialogs = dialog_serializers.patch_ui if originals is patches.ORIGINALS_2159_1231 else (lambda data: data)
     result = {'schema': 1, 'date': datetime.datetime.now(datetime.timezone.utc).isoformat(),
               'powerbi_version': args.version, 'scope': 'Offline original-file/resource guards only; not native UI or release certification',
               'status': 'failed', 'files': {}}
@@ -33,7 +34,7 @@ def main():
         for name, expected in originals.items():
             check_digest(args.originals / name, expected)
         for name, transform in (
-            ('Microsoft.Mashup.Client.UI.dll', legacy_html.patch_ui),
+            ('Microsoft.Mashup.Client.UI.dll', lambda data: dialogs(legacy_html.patch_ui(data))),
             ('Microsoft.PowerBI.Client.Windows.dll', lambda data: windows(signin.patch_windows(data, originals['Microsoft.PowerBI.Client.Windows.dll']))),
             ('msmdsrv.exe', patches.self_token),
         ):
