@@ -4,6 +4,16 @@
 
 ### Unreleased — product repository and upstream review
 
+- Keep the report on screen while a modal dialog is open (runtime
+  0.1.7-local.10). The runtime's frame receiver copies browser frames into
+  Desktop's window only while their host is exposed, and its test stopped at
+  the main window, which Desktop disables during any modal dialog. No frame
+  arrived until the dialog closed, so behind Options the main window showed an
+  empty background. `tools/test-modal-frames.py` checks frame delivery with the
+  main window enabled, disabled, and under an owned dialog. The Options
+  reference also gives a Hyprland window rule that opens Options at 1000 x 800.
+  See [Options](docs/reference/options-dialog.md#november-22-the-report-went-blank-behind-a-modal-dialog).
+
 - Let the Options dialog appear on Hyprland. Floating dialogs start fully
   transparent and fade in when their page reports it is ready; the Options
   recipe turned off the auto-size step that made that report, so Options stayed
