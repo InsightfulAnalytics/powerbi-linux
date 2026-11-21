@@ -10,7 +10,7 @@ and [Edit Permissions](permissions-wayland.md).
 
 | Patch or helper | Reason | Status / license |
 |---|---|---|
-| Wine composition aggregate | dcomp bridge, owner transport, cursor/HKL, optional capture and PE backing | Required; Wine/Neutron LGPL-2.1-or-later |
+| Wine composition aggregate | dcomp bridge, owner transport, cursor/HKL, optional capture and PE backing. Since 0.1.7-local.10 the owner transport also delivers frames while the main window is disabled by a modal dialog; see [Options](options-dialog.md#november-22-the-report-went-blank-behind-a-modal-dialog) | Required; Wine/Neutron LGPL-2.1-or-later |
 | Wine composition frame transport | Frames wider than 4096 or taller than 2304 pixels were rejected in silence, so Desktop stayed blank on an ultrawide or 5K output; a publisher gave a frame up as soon as the receiver held its lock, and the browser does not present it again | Part of the composition aggregate; LGPL-2.1-or-later; local build only. Any frame shape up to 7680 x 4320 pixels in area (the mapping is sparse), a larger one logged once as `err:dcomp`; publishers wait up to 50 ms, the receiver holds the lock for the copy alone. 5120 x 1440 headless output blank before, rendered after; 11 and 18 dropped frames while a report opened before, 0 and 0 after |
 | Wine shared system cursor resources | Resolve foreign standard cursor identities with bounded IPC and load local images | LGPL-2.1-or-later; scoped 0.1.3 component/compositor candidate, see [cursor](cursor.md) |
 | Wine HTML signed Int64 | Initialize legacy HTML Options when .NET exposes Int64 cache properties; HTML ES5+ only | Required; LGPL-2.1-or-later; seven numeric cases, x64 component |

@@ -175,8 +175,60 @@ Limits:
   compositor's maximized state makes the form ignore its own later resize to
   1000 x 800; resize it with the window manager. Dropping that state for
   resizable dialogs was tried in a local runtime and rejected: the form took
-  its new size, but Hyprland kept the frame at 600 x 400.
-- While Options is open, the main window shows an empty background instead of
-  the report. It returns when Options closes. Not investigated.
+  its new size, but Hyprland kept the frame at 600 x 400. A Hyprland window
+  rule opens it at the size Desktop asks for; the window follows it:
+
+  ```lua
+  -- Omarchy, in ~/.config/hypr/hyprland.lua:
+  o.window({ class = "^pbidesktop\\.exe$", title = "^Options$" }, { center = true, size = { 1000, 800 } })
+  -- Hyprland's Lua configuration without Omarchy:
+  hl.window_rule({ match = { class = "^pbidesktop\\.exe$", title = "^Options$" }, center = true, size = { 1000, 800 } })
+  ```
+
+- While Options was open, the main window showed an empty background instead
+  of the report. Corrected in the runtime; see the next section.
 - 2.158.1177.0 and 2.159.883.0 keep the Options recipe without this change;
   their original assemblies were not available to verify it.
+
+## November 22: the report went blank behind a modal dialog
+
+Observed with Options on Hyprland, on a physical monitor and on a headless
+output: while Options was open, the main window showed only its empty
+background (WinForms `WhiteSmoke`, RGB 245, 245, 245). The report came back when
+Options closed. Export template looked unaffected.
+
+### Diagnosis
+
+- WebView2 draws in the browser process; the runtime's frame receiver in
+  Desktop's process (`pbi_transport.c`, part of the Wine composition patch)
+  copies each frame into its host window. It copies a frame only while the
+  host is exposed, which it tests with `WindowFromPoint` at nine points of the
+  host.
+- `WindowFromPoint` stops at a disabled window and never looks at its
+  children. Desktop's main window is disabled while any modal dialog is open,
+  so every point resolved to the main window itself, the hosts counted as
+  covered, and no frame was delivered. A probe in the running session read the
+  main window at seven points and the Options page at the other two; with
+  Options closed, all nine resolved to the report's browser window.
+- What was on screen therefore depended on whether anything repainted the main
+  window while the dialog was open. Export template left the last frame in
+  place; opening Options repainted the main window, leaving the empty
+  background. Page visibility stayed `visible` throughout, so the browser was
+  not throttled.
+
+### Correction
+
+The receiver now descends from the window `WindowFromPoint` returns to the
+deepest visible child at the point, as `WindowFromPoint` itself does for an
+enabled window, before it looks for the host. A point under a dialog still
+counts as covered, and hidden sibling hosts are still never painted. The
+change is in `runtime/ports/pbi_transport.c` and the composition patch, so it
+needs runtime 0.1.7-local.10 or later.
+
+### Evidence
+
+| Check | 0.1.7-local.8 | With the correction |
+|---|---|---|
+| `tools/test-modal-frames.py` (own prefix, disposable window) | 1 passed, 2 failed: no frame reached the host while its main window was disabled | 3 passed |
+| Options from the Settings button, Hyprland headless output | Main window empty | Report, ribbon and panes shown behind Options |
+| Export template | Last frame kept | Report shown |

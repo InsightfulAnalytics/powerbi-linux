@@ -180,6 +180,17 @@ own Wine-only prefix and pipes, lists `\\.\pipe\` through `FindFirstFile` and
 [named pipes](../reference/named-pipes.md). It is part of the components
 suite and needs no Desktop.
 
+## Modal frame regression, November 22
+
+`python3 tools/test-modal-frames.py --runtime /path/to/runtime` creates its own
+Wine-only prefix and a small disposable window with a browser-like host, runs
+the runtime's frame receiver and checks that a published frame reaches the host
+with the main window enabled, disabled, and disabled under an owned dialog.
+Three checks passed with the corrected receiver; one passed and two failed on
+0.1.7-local.8. See [Options](../reference/options-dialog.md). It is part of the
+components suite, needs no Desktop and, like the other component checks, needs
+a prefix on a Linux file system.
+
 ## Post-publish Store rating regression, October 18
 
 `python3 tools/test-store-rating.py` invokes only the local rating entrypoint
