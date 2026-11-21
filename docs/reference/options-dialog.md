@@ -227,8 +227,14 @@ needs runtime 0.1.7-local.10 or later.
 
 ### Evidence
 
-| Check | 0.1.7-local.8 | With the correction |
+| Check | 0.1.7-local.8 | 0.1.7-local.10 |
 |---|---|---|
 | `tools/test-modal-frames.py` (own prefix, disposable window) | 1 passed, 2 failed: no frame reached the host while its main window was disabled | 3 passed |
 | Options from the Settings button, Hyprland headless output | Main window empty | Report, ribbon and panes shown behind Options |
 | Export template | Last frame kept | Report shown |
+| A page change made while Export template is open | Not tried | Reached the screen |
+
+Runtime 0.1.7-local.10 archive SHA-256
+`c980a0a1e5247a4e57c1f3b2d5262dcdac057d6ce466e46dc415af0bed6bcbcc`. After
+`pbi-linux update --runtime`, `pbi-linux doctor` reported every check OK and the
+profile's `dcomp.dll` matched the runtime's.
