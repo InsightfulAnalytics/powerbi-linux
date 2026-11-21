@@ -4,6 +4,14 @@
 
 ### Unreleased — product repository and upstream review
 
+- Let the Options dialog appear on Hyprland. Floating dialogs start fully
+  transparent and fade in when their page reports it is ready; the Options
+  recipe turned off the auto-size step that made that report, so Options stayed
+  an empty frame wherever the compositor applies window opacity. The Options
+  page now reports itself ready. Repair applies it (2.159.1231.0);
+  `pbi-linux doctor` reports it as `options-dialog`. See
+  [Options](docs/reference/options-dialog.md#november-21-options-was-an-empty-frame-on-hyprland).
+
 - Add `SECURITY-RULES.md`: six rules every change must keep (session reachable
   only by its user, checksummed downloads, no DevTools port outside
   diagnostics, contained archive extraction, Microsoft files changed only at

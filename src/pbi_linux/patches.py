@@ -6,7 +6,7 @@ from pathlib import Path
 import shutil
 import xml.etree.ElementTree as ElementTree
 from .common import Error, check_digest, digest, run, wine_env
-from . import autorecovery, dialog_serializers, legacy_html, signin, text_pickers, tooltips
+from . import autorecovery, dialog_serializers, legacy_html, options_show, signin, text_pickers, tooltips
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
@@ -35,7 +35,7 @@ RECIPES = {'2.158.1177.0': ORIGINALS, '2.159.883.0': CURRENT_ORIGINALS,
 def ui_patched_hash(version):
     """The complete Microsoft.Mashup.Client.UI.dll that setup and repair write."""
     if version == '2.159.1231.0':
-        return dialog_serializers.UI_2159_1231_PATCHED_SHA256
+        return options_show.UI_2159_1231_PATCHED_SHA256
     return legacy_html.patched_hash(version)
 
 
@@ -208,7 +208,7 @@ def install(prefix, runtime, log):
     patched_ui = legacy_html.patch_ui(ui_source.read_bytes())
     if originals is ORIGINALS_2159_1231:
         # Verified on 2.159.1231.0 only, like the Auto recovery dialog below.
-        patched_ui = dialog_serializers.patch_ui(patched_ui)
+        patched_ui = options_show.patch_ui(dialog_serializers.patch_ui(patched_ui))
     windows_name = 'Microsoft.PowerBI.Client.Windows.dll'
     windows_source = backups / windows_name
     if not windows_source.exists():

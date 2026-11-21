@@ -102,7 +102,7 @@ class DialogSerializerTests(unittest.TestCase):
         self.assertIn(b'ko.isObservable(v)', walker)
 
     def test_only_2159_1231_writes_the_combined_hash(self):
-        self.assertEqual(patches.ui_patched_hash('2.159.1231.0'), dialog_serializers.UI_2159_1231_PATCHED_SHA256)
+        self.assertEqual(patches.ui_patched_hash('2.159.1231.0'), patches.options_show.UI_2159_1231_PATCHED_SHA256)
         for version in ('2.158.1177.0', '2.159.883.0'):
             self.assertEqual(patches.ui_patched_hash(version), patches.legacy_html.patched_hash(version))
 
@@ -136,10 +136,12 @@ class DialogSerializerTests(unittest.TestCase):
         for recipe_name in ('ORIGINALS', 'CURRENT_ORIGINALS'):
             with self.subTest(recipe=recipe_name), \
                     patch.object(patches.dialog_serializers, 'patch_ui') as serializers, \
+                    patch.object(patches.options_show, 'patch_ui') as options, \
                     patch.object(patches.signin, 'patch_windows', return_value=b'email'):
                 # Setup goes on to the next guard, the text picker document.
                 self.assertIn('Unsupported text picker document', self.install_until_failure(recipe_name))
                 serializers.assert_not_called()
+                options.assert_not_called()
 
 
 if __name__ == '__main__':
