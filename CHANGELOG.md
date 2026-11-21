@@ -4,6 +4,14 @@
 
 ### Unreleased — product repository and upstream review
 
+- Let OK in the "Auto recovery" dialog close Desktop. Closing Desktop with a
+  recovered file that was never opened shows this legacy HTML dialog; under Wine
+  its OK did nothing (`DISP_E_BADPARAMCOUNT` while the page serialized the .NET
+  host object), and Cancel cancelled the close, so Desktop could not be closed.
+  A guarded resource change gives the dialog's view model its own serializer, for
+  2.159.1231.0. Repair applies it; `pbi-linux doctor` reports it as
+  `auto-recovery-dialog`. See [legacy HTML dialogs](docs/reference/legacy-html.md#desktop-would-not-close-auto-recovery-dialog-2026-11-21).
+
 - List the pipes of the named pipe root directory, `\\.\pipe\`. Wine failed
   every listing of it with `STATUS_BAD_DEVICE_TYPE`, so tools that find a
   program by the name of its pipe saw nothing: the pbir CLI reported no running
