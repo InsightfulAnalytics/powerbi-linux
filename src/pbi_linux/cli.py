@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
+from . import __version__, assets, autorecovery, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json, digest
 
 
@@ -89,6 +89,16 @@ def doctor(paths):
                     'A Desktop started by Desktop (another report, a restart) crashes; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('sign-in-dialog', False, str(exc))
+            if components['powerbi'] == '2.159.1231.0':
+                try:
+                    assembly = Path(installed['prefix']) / provision.BIN / 'Microsoft.PowerBI.Client.Windows.dll'
+                    recovery = autorecovery.resource_hash(assembly.read_bytes()) == autorecovery.RESOURCE_PATCHED_SHA256
+                    add('auto-recovery-dialog', recovery,
+                        'Auto recovery dialog serializer patch is present' if recovery else
+                        'OK in the Auto recovery dialog does nothing, so Desktop cannot close; '
+                        'close Desktop and run pbi-linux repair')
+                except (Error, OSError) as exc:
+                    add('auto-recovery-dialog', False, str(exc))
             try:
                 picker_patched = (installed['patches'].get(text_pickers.DOCUMENT) == tooltips.PATCHED_SHA256
                                   and digest(Path(installed['prefix']) / provision.BIN / text_pickers.DOCUMENT)

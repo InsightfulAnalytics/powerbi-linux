@@ -5,7 +5,7 @@ import re
 from pathlib import Path
 import shutil
 from .common import Error, check_digest, digest, run, wine_env
-from . import legacy_html, signin, text_pickers, tooltips
+from . import autorecovery, legacy_html, signin, text_pickers, tooltips
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
@@ -181,6 +181,10 @@ def install(prefix, runtime, log):
     patched_windows = (signin.patch_windows(windows_source.read_bytes())
                        if originals is ORIGINALS else
                        signin.patch_windows(windows_source.read_bytes(), originals[windows_name]))
+    if originals is ORIGINALS_2159_1231:
+        # Verified on 2.159.1231.0 only: the other builds' assemblies are not
+        # available to check the resource against, so they stay as they were.
+        patched_windows = autorecovery.patch_windows(patched_windows)
     picker_name = text_pickers.DOCUMENT
     picker_source = backups / picker_name
     if not picker_source.exists():
