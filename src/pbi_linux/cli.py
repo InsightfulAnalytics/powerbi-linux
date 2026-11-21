@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, autorecovery, dialog_serializers, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
+from . import __version__, assets, autorecovery, dialog_serializers, options_show, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json, digest
 
 
@@ -110,6 +110,13 @@ def doctor(paths):
                         'close Desktop and run pbi-linux repair')
                 except (Error, OSError) as exc:
                     add('dialog-serializers', False, str(exc))
+                try:
+                    shown = options_show.patched(ui.read_bytes())
+                    add('options-dialog', shown,
+                        'The Options dialog fades in when its page is ready' if shown else
+                        'Options opens as an empty frame; close Desktop and run pbi-linux repair')
+                except (Error, OSError) as exc:
+                    add('options-dialog', False, str(exc))
                 try:
                     assembly = Path(installed['prefix']) / provision.BIN / 'Microsoft.PowerBI.Client.Windows.dll'
                     recovery = autorecovery.resource_hash(assembly.read_bytes()) == autorecovery.RESOURCE_PATCHED_SHA256

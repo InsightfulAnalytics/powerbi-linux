@@ -74,6 +74,7 @@ class AutoRecoveryTests(unittest.TestCase):
             with patch.object(patches, recipe_name, originals), \
                     patch.object(patches.legacy_html, 'patch_ui', return_value=b'html'), \
                     patch.object(patches.dialog_serializers, 'patch_ui', side_effect=lambda data: data), \
+                    patch.object(patches.options_show, 'patch_ui', side_effect=lambda data: data), \
                     patch.object(patches.signin, 'patch_windows', return_value=b'email'), \
                     patch.object(patches, 'run') as run:
                 with self.assertRaises(common.Error) as raised:

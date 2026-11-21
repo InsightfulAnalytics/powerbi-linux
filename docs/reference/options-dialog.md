@@ -127,3 +127,56 @@ then writes private evidence under `.local/html-int64/`. It does not open a repo
 or modify Desktop settings. The full Options audit used a private in-process
 inspector in a diagnostic Desktop copy, without distributing Microsoft resources;
 that 22-tab audit is not yet a standalone public GUI regression tool.
+
+## November 21: Options was an empty frame on Hyprland
+
+Observed with Desktop 2.159.1231.0 on Hyprland 0.56, on a physical monitor and
+on a headless output. Options opened as an empty 600 x 400 frame with the
+compositor's border while the main window waited for it, so Desktop looked
+frozen. Closing the frame with the window manager released Desktop.
+
+### Diagnosis
+
+- A floating dialog is created fully transparent: `FloatingDialog` sets
+  `Opacity` to 0, which makes the form a layered window, and fades it in only
+  when its page calls the host's `onShow`.
+- `ModalDialog.showDialog` makes that call only while window auto-size is on.
+  The Options recipe above turns auto-size off
+  (`KoFloatingDialog.show({enableWindowAutoSize:false})`), so the page never
+  called `onShow`. A probe read the open dialog as `WS_EX_LAYERED` with
+  `LWA_ALPHA` and alpha 0.
+- The Wayland driver passes a layered window's opacity to the compositor
+  through `wp_alpha_modifier_v1`. Hyprland honours it, so the window was
+  invisible inside its border. A compositor without that protocol showed the
+  dialog at full opacity, which hid the fault when the recipe was written.
+- The page itself had rendered: the committed buffer held the Options content.
+
+### Correction
+
+`src/pbi_linux/options_show.py` makes the Options page call `onShow` itself on
+the deferred tick the original code used, followed by the maximized-state
+callback that came with it. Auto-size stays off. The change is a guarded,
+in-place edit of the Options dialog script, found by a unique marker and its
+.NET length prefix, for 2.159.1231.0 only; `pbi-linux doctor` reports it as
+`options-dialog`.
+
+### Evidence
+
+| Check | Before | With the correction |
+|---|---|---|
+| Options from the Settings button, Hyprland headless output | Empty frame; extended style `WS_EX_LAYERED`, alpha 0 | Content shown; `WS_EX_LAYERED` cleared after the fade-in |
+| Resize the dialog through the compositor to 1000 x 760 | Not tried: nothing was visible | Window and content followed the new size |
+| OK with no changes | Not reachable | Dialog closed and the main window was enabled again |
+| `tools/test-powerbi-recipe.py --version 2.159.1231.0` | | Passed, same length |
+
+Limits:
+
+- On Hyprland the dialog opens at 600 x 400, its size when it is mapped. The
+  compositor's maximized state makes the form ignore its own later resize to
+  1000 x 800; resize it with the window manager. Dropping that state for
+  resizable dialogs was tried in a local runtime and rejected: the form took
+  its new size, but Hyprland kept the frame at 600 x 400.
+- While Options is open, the main window shows an empty background instead of
+  the report. It returns when Options closes. Not investigated.
+- 2.158.1177.0 and 2.159.883.0 keep the Options recipe without this change;
+  their original assemblies were not available to verify it.
