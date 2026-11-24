@@ -19,7 +19,7 @@ class VersionedRecipeTests(unittest.TestCase):
         with self.assertRaisesRegex(common.Error, 'Unsupported Power BI installer'):
             recipes.installer('a' * 64, default)
 
-    def test_only_the_build_microsoft_still_serves_has_a_download(self):
+    def test_only_the_default_recipe_has_a_download(self):
         # The unversioned Microsoft URL is replaced in place by each build.
         lock = common.read_json(Path(__file__).resolve().parents[2] / 'runtime/sources.lock.json')
         self.assertEqual(lock['powerbi'], recipes.powerbi('2.159.1231.0'))

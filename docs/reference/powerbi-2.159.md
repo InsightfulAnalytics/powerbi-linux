@@ -1,5 +1,26 @@
 # Power BI Desktop 2.159.883.0 assessment
 
+## Download recheck: November 24, 2026
+
+During integration of PRs #5–#8, a fresh download from the configured Microsoft
+URL returned a different installer again:
+
+- Version resource: `2.160.1151.0` (`FileVersion` and `ProductVersion`).
+- Length: `720229728` bytes.
+- SHA-256: `89ace9881d43a350e205c93da9681a8211a521b2ccd63211e1baf6020efdcb85`.
+- HTTP Last-Modified: `Mon, 23 Nov 2026 17:47:06 GMT`.
+- Expected 2.159.1231.0 SHA-256:
+  `55e8ee44aa908d75edaed4bdb1a34863f41c047951f3724f298486fe07049f2d`.
+
+The 2.159.1231.0 port remains useful for exact local installers, but it no longer
+repairs automatic setup against today's download. No 2.160 recipe is registered;
+the new installer must remain rejected until its files and native behavior have
+been assessed. This blocks advertising restored automatic installation or
+publishing a release on that basis. The installer was downloaded for inspection
+only and was not executed or committed.
+
+## Original October assessment
+
 **October 20, 2026 — local compatibility candidate.** The guarded recipe has been
 ported and offline checks passed. Native acceptance and release certification are
 tracked separately below. RPM 18 targets this version; the 2.158 recipe remains
