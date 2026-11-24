@@ -21,8 +21,10 @@ ntdll format them for every directory information class. As on Windows:
 
 - an entry's size is the pipe's current instance count, its allocation size
   the maximum instance count, and its attributes `FILE_ATTRIBUTE_NORMAL`;
-- the search mask of the first query is kept for the handle, so a later query
-  without a mask goes on with it; a restart with a new mask replaces it;
+- the search mask of the first query is kept for the handle, including when a
+  later query supplies another mask with `RestartScan`; restarting only rewinds
+  the scan, as specified by
+  [NtQueryDirectoryFile](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-ntquerydirectoryfile);
 - a first query that matches nothing returns `STATUS_NO_SUCH_FILE`, a later
   one `STATUS_NO_MORE_FILES`;
 - listing needs `FILE_LIST_DIRECTORY` access.
@@ -40,6 +42,10 @@ access, a closed pipe and 1,100 pipes read through `FindNextFile`.
 |---|---|---|
 | 0.1.6-beta.1, published | 14 | 27 |
 | Built from this change with `runtime/build.py` | 75 | 0 |
+
+The November 24 integration adds four checks for restarting an exact-name scan
+with a different mask. The runner now requires 79 checks; the 75-check result
+above predates this regression case.
 
 With a runtime carrying the patch (built from a tree that also carries the
 Arch and Hyprland changes) and a test report open in Desktop 2.159.1231.0,

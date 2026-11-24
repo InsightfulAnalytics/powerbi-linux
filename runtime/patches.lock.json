@@ -13,5 +13,5 @@
   "wine-11.18-wayland-data-control-primary.patch": "eaf2e13d6c32053fe9b8b35c5aeba6c8bbccdd629c3205a6a99ac20b1ed2b310",
   "wine-11.18-wayland-normal-resize.patch": "59ece0115d772d0671e98fb7cb18930dfb1aa2045b8b38c37ee72f623ae58446",
   "wine-11.18-wayland-parent.patch": "d8ed5e7c1d8d9f2751fb99a45d59f28594667f18f72a090f71ddb51ddebee346",
-  "wine-11.18-named-pipe-directory.patch": "51762b8e9bb74254ff5f14cfeede9be6e5eac259da3f84bdf22206114e7cc989"
+  "wine-11.18-named-pipe-directory.patch": "27624153cb54602a0040bad995ce39c467109756f09f8147ea2942cff36f680c"
 }

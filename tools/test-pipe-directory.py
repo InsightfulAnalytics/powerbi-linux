@@ -16,7 +16,7 @@ sys.path.insert(0, str(ROOT / 'src'))
 from pbi_linux import assets
 from pbi_linux.common import Paths, read_json, wine_env
 
-CHECKS = 75
+CHECKS = 79
 
 
 def main():

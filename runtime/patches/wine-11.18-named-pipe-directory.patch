@@ -348,9 +348,9 @@ Wine-derived change: LGPL-2.1-or-later.
 +    }
 +    if (query->flags & PIPE_DIR_MASK) mask_len = (size - sizeof(*query)) & ~(data_size_t)(sizeof(WCHAR) - 1);
 +
-+    /* as on Windows, the mask of the first query is kept; a restart with a new mask replaces it */
++    /* Keep the first query's mask even when a later query restarts the scan. */
 +    fresh = !dir->dir_started;
-+    if (!dir->dir_started || ((query->flags & PIPE_DIR_RESTART) && (query->flags & PIPE_DIR_MASK)))
++    if (!dir->dir_started)
 +    {
 +        WCHAR *mask = NULL;
 +
