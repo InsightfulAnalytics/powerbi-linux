@@ -4,6 +4,12 @@
 
 ### Unreleased — product repository and upstream review
 
+- Prepare RPM `0.1.0-20`, experimental DEB `0.1.0-20~experimental1` and Arch
+  revision 20 with community PRs #5–#8 and the 2.160 installer port. Wine fixes
+  require the integration runtime; the automatic setup pin remains the published
+  0.1.6-beta.1 until new runtime assets are available and verified. See the
+  [delivery notes](docs/releases/v0.1.0-20.md).
+
 - Port the exact guarded recipe to Power BI Desktop 2.160.1151.0 and select it
   for new source-tree setup. Reuse the five byte-identical HTML resources and
   unchanged email/editor hooks; relocate the native Options metadata and the
