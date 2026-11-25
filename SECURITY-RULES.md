@@ -34,7 +34,7 @@ Enforced by: `tests/unit/test_product.py`, "test_archive_rejects_traversal" and
 ## 5. Microsoft files are changed only when their exact checksum is known
 
 Why: patching an unknown build could break Desktop or hide a tampered file.
-Enforced by: `tests/unit/test_recipes.py`, "test_the_two_2159_builds_reject_each_others_files";
+Enforced by: `tests/unit/test_recipes.py`, "test_supported_builds_reject_each_others_files";
 `tests/unit/test_dialog_serializers.py`, "test_unknown_contents_are_refused";
 `tests/unit/test_autorecovery.py`, "test_unknown_script_contents_are_rejected"
 
