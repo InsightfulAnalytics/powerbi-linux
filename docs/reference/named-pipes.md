@@ -47,6 +47,30 @@ The November 24 integration adds four checks for restarting an exact-name scan
 with a different mask. The runner now requires 79 checks; the 75-check result
 above predates this regression case.
 
+### Fedora 44 integration check: November 24, 2026
+
+The extended probe ran without a compositor in its own disposable prefixes.
+No Desktop session or production prefix was used.
+
+| Runtime / control | Checks passed | Checks failed |
+|---|---|---|
+| Published 0.1.6-beta.1, extended probe | 15 | 30 |
+| Local 0.1.7-pr-integration.1, corrected restart mask | 79 | 0 |
+| Same candidate with only the server's old mask condition restored | 78 | 1 |
+
+The published runtime cannot enumerate the directory, so checks conditional on
+a successful listing are not reached. Its smaller total is not missing coverage
+counted as success. The server control failed exactly at `restart must keep the
+original exact mask`; it used the same candidate client and probe. The candidate
+runtime payload was unchanged by that control, and its source/build provenance
+was verified after restoring the source. All test prefixes stopped and were
+removed.
+
+The local candidate archive SHA-256 is
+`0128b0f2bb2d4ab098767f96f9492223015df6f57d28d954170e0e031a5ae482`.
+This is headless pipe/API validation, not Desktop integration or graphical
+release certification.
+
 With a runtime carrying the patch (built from a tree that also carries the
 Arch and Hyprland changes) and a test report open in Desktop 2.159.1231.0,
 `pbir desktop list` named the report and its pages, `pbir desktop refresh`
