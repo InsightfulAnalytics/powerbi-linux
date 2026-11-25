@@ -26,13 +26,19 @@ ORIGINALS_2159_1231 = {
     'msmdsrv.exe': CURRENT_ORIGINALS['msmdsrv.exe'],
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2159_1231_ORIGINAL_SHA256,
 }
+ORIGINALS_2160 = {
+    'Microsoft.PowerBI.Client.Shared.dll': '4a3637c56291d3b1057ad6c792fd7ef8a0f6e11e9664b1bcf864f38722b027c2',
+    'Microsoft.PowerBI.Client.Windows.dll': 'd6608ce05d09d0601fd36c99d6a91c606025b369839930b5f55c0a9deffc2f50',
+    'msmdsrv.exe': '81b10be9ef3245c9f39647b75c92315007bf59726dbab74f7d49f309392a97bf',
+    'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2160_ORIGINAL_SHA256,
+}
 RECIPES = {'2.158.1177.0': ORIGINALS, '2.159.883.0': CURRENT_ORIGINALS,
-           '2.159.1231.0': ORIGINALS_2159_1231}
+           '2.159.1231.0': ORIGINALS_2159_1231, '2.160.1151.0': ORIGINALS_2160}
 
 
 def originals_for(desktop_sha256):
     """Select one complete recipe from the exact Desktop assembly; 2.158 otherwise."""
-    for recipe in (ORIGINALS_2159_1231, CURRENT_ORIGINALS):
+    for recipe in (ORIGINALS_2160, ORIGINALS_2159_1231, CURRENT_ORIGINALS):
         if recipe['Microsoft.PowerBI.Client.Windows.dll'] == desktop_sha256:
             return recipe
     return ORIGINALS
@@ -100,20 +106,28 @@ def build_window_frame(helpers, wine, env, log, key):
 
 def self_token(source):
     data = bytearray(source)
-    if hashlib.sha256(source).hexdigest() == CURRENT_ORIGINALS['msmdsrv.exe']:
-        offset = 1161876
-        expected = bytes.fromhex('ff 15 6e 5f 2b 02 48 8b c8 ff 15 4d 6b 2b 02')
-        name_offset = 48001650
+    builds = {
+        CURRENT_ORIGINALS['msmdsrv.exe']: (
+            1161876, 'ff156e5f2b02488bc8ff154d6b2b02', 48001650,
+            '1ef50a9a52da6693ebeaa439da01ca7b2142247b340e90c4eaea579243621d35'),
+        ORIGINALS_2160['msmdsrv.exe']: (
+            1694964, 'ff154e1d2002488bc8ff15fd292002', 47786518,
+            'afb47caa540181e90d44ec0570b5e8b19a83fa2f17e5d6bd768d00227269d1e5'),
+    }
+    sha = hashlib.sha256(source).hexdigest()
+    if sha in builds:
+        offset, expected, name_offset, patched = builds[sha]
+        expected = bytes.fromhex(expected)
         if data[offset:offset + len(expected)] != expected:
-            raise Error('Unexpected 2.159 impersonation call site')
+            raise Error('Unexpected versioned impersonation call site')
         name = b'ImpersonateAnonymousToken\0'
         if data[name_offset:name_offset + len(name)] != name:
-            raise Error('Unexpected 2.159 impersonation import')
+            raise Error('Unexpected versioned impersonation import')
         data[offset:offset + 9] = bytes.fromhex('b9 02 00 00 00 90 90 90 90')
         data[name_offset:name_offset + len(name)] = b'ImpersonateSelf\0'.ljust(len(name), b'\0')
         result = bytes(data)
-        if hashlib.sha256(result).hexdigest() != '1ef50a9a52da6693ebeaa439da01ca7b2142247b340e90c4eaea579243621d35':
-            raise Error('Unexpected 2.159 impersonation patch output')
+        if hashlib.sha256(result).hexdigest() != patched:
+            raise Error('Unexpected versioned impersonation patch output')
         return result
     if data[0x16f0c4:0x16f0cd] != bytes.fromhex('ff 15 3e 69 2f 02 48 8b c8'):
         raise Error('Unexpected impersonation call site')
@@ -171,6 +185,10 @@ def install(prefix, runtime, log):
     for source in (runtime / 'helpers').iterdir():
         if source.is_file():
             shutil.copy2(source, helpers / source.name)
+    # New exact Desktop recipes may need additional WinRT type shapes without
+    # changing Wine. Compile the CLI's reviewed shim rather than an older copy
+    # bundled in the selected runtime archive.
+    shutil.copy2(Path(__file__).resolve().parents[1] / 'helpers/WinRTStubs.cs', helpers / 'WinRTStubs.cs')
     key = helpers / 'stubs.snk'
     windows_input = helpers / 'Desktop-email-dialog-input.dll'
     if not key.exists():

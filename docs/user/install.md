@@ -49,7 +49,7 @@ Microsoft's [official Power BI Desktop download page](https://www.microsoft.com/
 pbi-linux setup --installer '/path/to/PBIDesktopSetup_x64.exe'
 ```
 
-**The EXE must match the project's validated version.** Microsoft may offer a newer version before this project supports it. The page offered 2.159.883.0 when checked on October 19, 2026; RPM 18 defaults to that version and also accepts **2.158.1177.0**. On November 2, 2026 Microsoft replaced it with **2.159.1231.0** at the same address: a release that pins 2.159.883.0 then stops with a checksum error during the automatic download. The source tree defaults to 2.159.1231.0 and keeps accepting the two older exact installers when you supply them. Setup checks the file and explains a mismatch; do not skip checksum checks or use untrusted mirrors. Version hashes and advanced local-file options are in the [input contract](../reference/installation-lifecycle.md#required-inputs).
+**The EXE must match an exact registered recipe.** The source tree targets **2.160.1151.0**, the Microsoft download checked on November 24, 2026, and accepts exact **2.159.1231.0**, **2.159.883.0** and **2.158.1177.0** installers as local inputs. Published releases with older pins still reject the newer download. Setup checks the file before provisioning; do not skip checksum checks or use untrusted mirrors. See [2.160 validation and limits](../reference/powerbi-2.160.md) and the [input contract](../reference/installation-lifecycle.md#required-inputs).
 
 ## 3. Open your reports
 

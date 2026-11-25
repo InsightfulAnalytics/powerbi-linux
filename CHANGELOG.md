@@ -4,8 +4,17 @@
 
 ### Unreleased — product repository and upstream review
 
+- Port the exact guarded recipe to Power BI Desktop 2.160.1151.0 and select it
+  for new source-tree setup. Reuse the five byte-identical HTML resources and
+  unchanged email/editor hooks; relocate the native Options metadata and the
+  guarded Analysis Services impersonation call site. Keep all three prior
+  installer recipes for local inputs and maintenance. Add the optional package
+  type shapes required at startup to the CLI-owned WinRT shim; package actions
+  remain unsupported. See the
+  [2.160 assessment](docs/reference/powerbi-2.160.md).
+
 - Port the guarded recipe to Power BI Desktop 2.159.1231.0, which Microsoft has
-  served at the pinned address since November 2, 2026, and make it the default.
+  served at the pinned address from November 2, 2026 until the 2.160 replacement.
   Releases pinning 2.159.883.0 fail the automatic download with a checksum error.
   The five legacy HTML resources are byte-identical and moved by 328 bytes; the
   Options native method differs only in two user-string tokens. Exact 2.159.883.0

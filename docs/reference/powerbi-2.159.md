@@ -12,12 +12,11 @@ URL returned a different installer again:
 - Expected 2.159.1231.0 SHA-256:
   `55e8ee44aa908d75edaed4bdb1a34863f41c047951f3724f298486fe07049f2d`.
 
-The 2.159.1231.0 port remains useful for exact local installers, but it no longer
-repairs automatic setup against today's download. No 2.160 recipe is registered;
-the new installer must remain rejected until its files and native behavior have
-been assessed. This blocks advertising restored automatic installation or
-publishing a release on that basis. The installer was downloaded for inspection
-only and was not executed or committed.
+At this recheck, the 2.159.1231.0 port remained useful for exact local installers
+but could not repair automatic setup against the new download. No 2.160 recipe
+was registered yet. The subsequent [2.160 port and validation](powerbi-2.160.md)
+records the current source support and its remaining release limits. The initial
+recheck inspected the installer without executing or committing it.
 
 ## Original October assessment
 
