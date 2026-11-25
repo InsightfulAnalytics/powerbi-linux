@@ -4,7 +4,7 @@ import hashlib
 from pathlib import Path
 import shutil
 from .common import Error, check_digest, digest, run, wine_env
-from . import legacy_html, signin, text_pickers, tooltips
+from . import autorecovery, dialog_serializers, legacy_html, options_show, signin, text_pickers, tooltips
 
 ORIGINALS = {
     'Microsoft.PowerBI.Client.Shared.dll': '1dc130d913b92f315b81aa5162e8fa74e8a0279742f988561680111d5189ff78',
@@ -34,6 +34,16 @@ ORIGINALS_2160 = {
 }
 RECIPES = {'2.158.1177.0': ORIGINALS, '2.159.883.0': CURRENT_ORIGINALS,
            '2.159.1231.0': ORIGINALS_2159_1231, '2.160.1151.0': ORIGINALS_2160}
+# Builds whose assemblies were available to verify the shared dialog
+# serializers, the Options show call and the Auto recovery dialog against.
+DIALOG_RECIPES = ('2.159.1231.0', '2.160.1151.0')
+
+
+def ui_patched_hash(version):
+    """The complete Microsoft.Mashup.Client.UI.dll that setup and repair write."""
+    if version in DIALOG_RECIPES:
+        return options_show.UI_PATCHED_SHA256[version]
+    return legacy_html.patched_hash(version)
 
 
 def originals_for(desktop_sha256):
@@ -162,6 +172,9 @@ def install(prefix, runtime, log):
     if not ui_source.exists():
         ui_source = bin_dir / ui_name
     patched_ui = legacy_html.patch_ui(ui_source.read_bytes())
+    dialogs = any(originals is recipe for recipe in (ORIGINALS_2159_1231, ORIGINALS_2160))
+    if dialogs:
+        patched_ui = options_show.patch_ui(dialog_serializers.patch_ui(patched_ui))
     windows_name = 'Microsoft.PowerBI.Client.Windows.dll'
     windows_source = backups / windows_name
     if not windows_source.exists():
@@ -170,6 +183,10 @@ def install(prefix, runtime, log):
     patched_windows = (signin.patch_windows(windows_source.read_bytes())
                        if originals is ORIGINALS else
                        signin.patch_windows(windows_source.read_bytes(), originals[windows_name]))
+    if dialogs:
+        # The other builds' assemblies were not available to check the
+        # resource against, so they stay as they were.
+        patched_windows = autorecovery.patch_windows(patched_windows)
     picker_name = text_pickers.DOCUMENT
     picker_source = backups / picker_name
     if not picker_source.exists():

@@ -7,7 +7,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-from . import __version__, assets, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
+from . import __version__, assets, autorecovery, dialog_serializers, options_show, launch, provision, desktop, resources, legacy_html, signin, connectors, patches, text_pickers, tooltips, onboarding, platforms
 from .common import Error, Paths, busy, read_json, check_digest, atomic_json, digest
 
 
@@ -62,7 +62,7 @@ def doctor(paths):
                 issues = []
                 if missing:
                     issues.append('Missing registry entries: ' + ', '.join(missing))
-                if installed['patches'].get('Microsoft.Mashup.Client.UI.dll') != legacy_html.patched_hash(components['powerbi']):
+                if installed['patches'].get('Microsoft.Mashup.Client.UI.dll') != patches.ui_patched_hash(components['powerbi']):
                     issues.append('Legacy HTML assembly patch is missing or outdated')
                 add('legacy-html', not issues,
                     '; '.join(issues) + '; close Desktop and run pbi-linux repair' if issues else
@@ -85,6 +85,32 @@ def doctor(paths):
                     'Window frame correction is missing; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('sign-in-dialog', False, str(exc))
+            if components['powerbi'] in patches.DIALOG_RECIPES:
+                ui = Path(installed['prefix']) / provision.BIN / 'Microsoft.Mashup.Client.UI.dll'
+                try:
+                    serializers = dialog_serializers.patched(ui.read_bytes())
+                    add('dialog-serializers', serializers,
+                        'Legacy dialogs serialize their view model without the .NET host' if serializers else
+                        'OK does nothing in Options, Export template and other legacy dialogs; '
+                        'close Desktop and run pbi-linux repair')
+                except (Error, OSError) as exc:
+                    add('dialog-serializers', False, str(exc))
+                try:
+                    shown = options_show.patched(ui.read_bytes())
+                    add('options-dialog', shown,
+                        'The Options dialog fades in when its page is ready' if shown else
+                        'Options opens as an empty frame; close Desktop and run pbi-linux repair')
+                except (Error, OSError) as exc:
+                    add('options-dialog', False, str(exc))
+                try:
+                    windows = Path(installed['prefix']) / provision.BIN / 'Microsoft.PowerBI.Client.Windows.dll'
+                    recovery = autorecovery.resource_hash(windows.read_bytes()) == autorecovery.RESOURCE_PATCHED_SHA256
+                    add('auto-recovery-dialog', recovery,
+                        'Auto recovery dialog serializer patch is present' if recovery else
+                        'OK in the Auto recovery dialog does nothing, so Desktop cannot close; '
+                        'close Desktop and run pbi-linux repair')
+                except (Error, OSError) as exc:
+                    add('auto-recovery-dialog', False, str(exc))
             try:
                 picker_patched = (installed['patches'].get(text_pickers.DOCUMENT) == tooltips.PATCHED_SHA256
                                   and digest(Path(installed['prefix']) / provision.BIN / text_pickers.DOCUMENT)

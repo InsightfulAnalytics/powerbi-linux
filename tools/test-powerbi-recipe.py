@@ -10,7 +10,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
-from pbi_linux import legacy_html, patches, signin, text_pickers
+from pbi_linux import autorecovery, dialog_serializers, legacy_html, options_show, patches, signin, text_pickers
 from pbi_linux.common import Error, check_digest
 
 
@@ -23,6 +23,11 @@ def main():
     if args.output.exists():
         parser.error('Evidence output must be a new file')
     originals = patches.RECIPES[args.version]
+    # The dialog patches are verified on the builds in DIALOG_RECIPES only, as in setup.
+    verified = args.version in patches.DIALOG_RECIPES
+    windows = autorecovery.patch_windows if verified else (lambda data: data)
+    dialogs = ((lambda data: options_show.patch_ui(dialog_serializers.patch_ui(data)))
+               if verified else (lambda data: data))
     result = {'schema': 1, 'date': datetime.datetime.now(datetime.timezone.utc).isoformat(),
               'powerbi_version': args.version, 'scope': 'Offline original-file/resource guards only; not native UI or release certification',
               'status': 'failed', 'files': {}}
@@ -31,8 +36,8 @@ def main():
         for name, expected in originals.items():
             check_digest(args.originals / name, expected)
         for name, transform in (
-            ('Microsoft.Mashup.Client.UI.dll', legacy_html.patch_ui),
-            ('Microsoft.PowerBI.Client.Windows.dll', lambda data: signin.patch_windows(data, originals['Microsoft.PowerBI.Client.Windows.dll'])),
+            ('Microsoft.Mashup.Client.UI.dll', lambda data: dialogs(legacy_html.patch_ui(data))),
+            ('Microsoft.PowerBI.Client.Windows.dll', lambda data: windows(signin.patch_windows(data, originals['Microsoft.PowerBI.Client.Windows.dll']))),
             ('msmdsrv.exe', patches.self_token),
         ):
             source = (args.originals / name).read_bytes()
