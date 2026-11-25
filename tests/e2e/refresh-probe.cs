@@ -82,7 +82,8 @@ class RefreshProbe
                 Console.WriteLine("REFRESH OK");
                 return 0;
             }
-            string[] wanted = args[1] == "--batch" ? args[3].Split(',') : new string[] { args[1] };
+            // Keep the .NET Framework overload when compiled with Mono too.
+            string[] wanted = args[1] == "--batch" ? args[3].Split(new[] { ',' }) : new string[] { args[1] };
             var names = new ArrayList();
             foreach (var table in Tables(database)) names.Add((string)Property(table, "Name"));
             var missing = new ArrayList();

@@ -4,7 +4,6 @@
   "wine-11.18-composition.patch": "5f41b4d8569cb5afbaedf0c7a6f1cbc906c6451ac7e690547f52add771854bc2",
   "wine-11.18-cursor-resource.patch": "db38c2d9ad6ec2e3c313bcc0a35e9d764896473419b80c507bfcd4c5ba0e0546",
   "wine-11.18-jscript-int64.patch": "baa1e7247957c9c7fa0b740066f11b971edae2329a8b667d357dc49935e524f7",
-  "wine-11.18-named-pipe-directory.patch": "51762b8e9bb74254ff5f14cfeede9be6e5eac259da3f84bdf22206114e7cc989",
   "wine-11.18-oleaut32-max-date.patch": "293cbc1b75f45a89b897c8c47d4f798b7c55820e28223faece30155e52e6c337",
   "wine-11.18-oledb32-variant.patch": "903661c96a17113a1a6a10d281bfda896c0ea6eb51636299e4ae9b766facf39c",
   "wine-11.18-queue-masks-after-internal.patch": "e35657c3856c9a6f163c0d4c05b7b68bd3f758130366a21a88f37bb025019928",
@@ -17,5 +16,6 @@
   "wine-11.18-wayland-keep-toplevel-state.patch": "f7b078ee8e0adc47a2f4296db32fffa216827ad480cb1d690f67cb21b4ae469c",
   "wine-11.18-wayland-normal-resize.patch": "59ece0115d772d0671e98fb7cb18930dfb1aa2045b8b38c37ee72f623ae58446",
   "wine-11.18-wayland-parent.patch": "d8ed5e7c1d8d9f2751fb99a45d59f28594667f18f72a090f71ddb51ddebee346",
-  "wine-11.18-wayland-unmaximize-restore-size.patch": "d82755f11071e5460ff9e21e0cfb724f52dcddfe56c763c143e0dc7667e6eeb6"
+  "wine-11.18-wayland-unmaximize-restore-size.patch": "d82755f11071e5460ff9e21e0cfb724f52dcddfe56c763c143e0dc7667e6eeb6",
+  "wine-11.18-named-pipe-directory.patch": "27624153cb54602a0040bad995ce39c467109756f09f8147ea2942cff36f680c"
 }

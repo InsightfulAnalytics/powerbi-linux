@@ -1,0 +1,178 @@
+{
+  "powerbi_version": "2.160.1151.0",
+  "installer_sha256": "89ace9881d43a350e205c93da9681a8211a521b2ccd63211e1baf6020efdcb85",
+  "installer_bytes": 720229728,
+  "source": "https://download.microsoft.com/download/8/8/0/880bca75-79dd-466a-927d-1abf1f5454b0/PBIDesktopSetup_x64.exe",
+  "last_modified": "Mon, 23 Nov 2026 17:47:06 GMT",
+  "date": "2026-11-25",
+  "scope": "Exact recipe and CLI-owned WinRT shim; clean install and isolated native synthetic model checks",
+  "status": "native-synthetic-refresh-save-reopen-passed",
+  "runtime_certified": false,
+  "port": {
+    "version": "2.160.1151.0",
+    "originals": {
+      "Microsoft.PowerBI.Client.Shared.dll": "4a3637c56291d3b1057ad6c792fd7ef8a0f6e11e9664b1bcf864f38722b027c2",
+      "Microsoft.PowerBI.Client.Windows.dll": "d6608ce05d09d0601fd36c99d6a91c606025b369839930b5f55c0a9deffc2f50",
+      "Microsoft.Mashup.Client.UI.dll": "8a33233c5c17414210a0a1da096014923c0d46aa48d4ae93a4830689ddb794fd",
+      "msmdsrv.exe": "81b10be9ef3245c9f39647b75c92315007bf59726dbab74f7d49f309392a97bf"
+    },
+    "ui_base": "9196e9d2c56a0ab88ff898d52604558cdc7b468a5407b18652c76dc158932cd6",
+    "ui_patched": "cbedb7735ecfded804b4d01ee5a93c0c8b6cb190e48254fc6478709bbb34286e",
+    "native_options": {
+      "offset": 285600,
+      "original_sha256": "fd850a6de95bfcdde92a53948b23fb7e543bf28cb99b31a82d05a99f5a949cbe",
+      "replacement": "aa031d350b02031f0a5828cd1800062a280400000a72140a0470038ce6040002282300000a738d04000a7a000330040045000000000000000228290a000a25256f2a0a000a2000000200606f2b0a000a0228af1800062c2402284809000a72a21b087028ca00000a2c1225256fa40a000a2000000400606fa50a000a2a00000000",
+      "row": 103821374,
+      "old_rva": 277167,
+      "new_rva": 293324
+    },
+    "engine": {
+      "offset": 1694964,
+      "expected": "ff154e1d2002488bc8ff15fd292002",
+      "name_offset": 47786518,
+      "patched_sha256": "afb47caa540181e90d44ec0570b5e8b19a83fa2f17e5d6bd768d00227269d1e5"
+    },
+    "email_patched": "314cd9fe2e3d93ad706af8e5382dfff64ddaa56dd823ed752792d4694a29e3c9",
+    "picker_original": "0a03d24a6967d3026e8e910399cddd51ef668efd8f9b700a874f55f63059c41a",
+    "picker_and_tooltips": "9acd09d12a94153533812cee98050bb210f51150ec4ca2727afebf3985a1fba9"
+  },
+  "offline_recipe_check": {
+    "schema": 1,
+    "date": "2026-11-25T02:18:16.354492+00:00",
+    "powerbi_version": "2.160.1151.0",
+    "scope": "Offline original-file/resource guards only; not native UI or release certification",
+    "status": "passed",
+    "files": {
+      "Microsoft.Mashup.Client.UI.dll": {
+        "original_sha256": "8a33233c5c17414210a0a1da096014923c0d46aa48d4ae93a4830689ddb794fd",
+        "patched_sha256": "cbedb7735ecfded804b4d01ee5a93c0c8b6cb190e48254fc6478709bbb34286e",
+        "length_preserved": true
+      },
+      "Microsoft.PowerBI.Client.Windows.dll": {
+        "original_sha256": "d6608ce05d09d0601fd36c99d6a91c606025b369839930b5f55c0a9deffc2f50",
+        "patched_sha256": "314cd9fe2e3d93ad706af8e5382dfff64ddaa56dd823ed752792d4694a29e3c9",
+        "length_preserved": true
+      },
+      "msmdsrv.exe": {
+        "original_sha256": "81b10be9ef3245c9f39647b75c92315007bf59726dbab74f7d49f309392a97bf",
+        "patched_sha256": "afb47caa540181e90d44ec0570b5e8b19a83fa2f17e5d6bd768d00227269d1e5",
+        "length_preserved": true
+      },
+      "WebView2Resources/minerva/reportView.html": {
+        "original_sha256": "0a03d24a6967d3026e8e910399cddd51ef668efd8f9b700a874f55f63059c41a",
+        "patched_sha256": "1d45d1ed9faf3253e1013941dc3be9bc51ff5415f8994e77e9e873c9671ae708"
+      }
+    }
+  },
+  "options_semantics": {
+    "Microsoft.Mashup.Client.UI.Windows.FloatingDialogWindow::get_CreateParams": {
+      "same_resolved_instructions_as_2158_patch": true,
+      "instructions": 23,
+      "semantic_sha256": "367dbe7e21fde41f209326462cf2dd10be3af69b7219a1c05d8e3cbf26583082"
+    },
+    "Microsoft.Mashup.Client.UI.Windows.WebDialogWindow::StartResize": {
+      "same_resolved_instructions_as_2158_patch": true,
+      "instructions": 16,
+      "semantic_sha256": "fed8315f54ac0d15e57b20a8df7806fe781af948d584be4546dbe3c5442940f8"
+    }
+  },
+  "patcher_chain": {
+    "environment": "Pinned builder image; Mono; real original 2.160 assemblies; no Desktop execution",
+    "status": "passed",
+    "patchers": [
+      "PatchShared",
+      "PatchWinRT",
+      "PatchStoreRating",
+      "PatchCacheCompatibility",
+      "PatchWindowFrame",
+      "PatchSavePrompt"
+    ],
+    "guards_relaxed": false,
+    "private_signing_keys_retained": false
+  },
+  "not_run": [
+    "Fedora GNOME physical compositor/input matrix",
+    "CSV import",
+    "158-table refresh",
+    "sign-in and publishing",
+    "two-hour session"
+  ],
+  "winrt_compatibility": {
+    "startup_dependency": "Windows.Management.Deployment.PackageManager and related optional Lyra/MSIX type shapes",
+    "cli_source_overrides_runtime_copy": true,
+    "package_catalog": "empty",
+    "package_mutations_and_packaged_launch": "PlatformNotSupportedException",
+    "native_api_availability": false,
+    "compiled_behavior_probe": "passed"
+  },
+  "source_checks": {
+    "quick_suite": "passed",
+    "unit_tests": 189,
+    "unit_skipped": 1
+  },
+  "native_setup": {
+    "environment": "Fedora 44; isolated XDG; separate Weston headless compositor",
+    "runtime_sha256": "7a24a7dcf950457c65b8eac90e6b2b7640a6d460279d29fce7f3867a6064d421",
+    "clean_install": "passed",
+    "doctor": {
+      "passed": 20,
+      "total": 20
+    },
+    "startup_shim_correction_applied_by": "repair with native prefix .NET compiler"
+  },
+  "native_synthetic_refresh_save": {
+    "runtime_sha256": "0128b0f2bb2d4ab098767f96f9492223015df6f57d28d954170e0e031a5ae482",
+    "backend_evidence_complete": true,
+    "model_total_verified": true,
+    "fact_rows_verified": true,
+    "relationship_filter_verified": true,
+    "ui_refresh_requested": true,
+    "save_observed": true,
+    "saved_files": [
+      "Synthetic.SemanticModel/.pbi/cache.abf"
+    ],
+    "gpu_restart_events": [],
+    "fixture": {
+      "tables": 3,
+      "fact_rows": 1000,
+      "expected_total": 300,
+      "relationship_filtered_amount": 1
+    },
+    "native_frame_review": "passed: report table with total 300, ribbon and editor panels rendered in captured native window"
+  },
+  "native_saved_model_reopen": {
+    "runtime_sha256": "7a24a7dcf950457c65b8eac90e6b2b7640a6d460279d29fce7f3867a6064d421",
+    "backend_evidence_complete": true,
+    "model_total_verified": true,
+    "fact_rows_verified": true,
+    "relationship_filter_verified": true,
+    "ui_refresh_requested": false,
+    "gpu_restart_events": [],
+    "native_frame_review": "passed: saved report table with total 300 rendered in native window",
+    "scope": "Separate application session without refresh; existing cache recovered all synthetic data. Full release save/reopen certification remains separate."
+  },
+  "native_default_runtime_refresh_save": {
+    "runtime_sha256": "7a24a7dcf950457c65b8eac90e6b2b7640a6d460279d29fce7f3867a6064d421",
+    "backend_evidence_complete": true,
+    "model_total_verified": true,
+    "fact_rows_verified": true,
+    "relationship_filter_verified": true,
+    "ui_refresh_requested": true,
+    "save_observed": true,
+    "saved_files": [
+      "Synthetic.SemanticModel/.pbi/cache.abf"
+    ],
+    "gpu_restart_events": [],
+    "native_frame_review": "passed: expected report table and total 300, ribbon and editor panels rendered"
+  },
+  "native_integration_runtime_reopen": {
+    "runtime_sha256": "0128b0f2bb2d4ab098767f96f9492223015df6f57d28d954170e0e031a5ae482",
+    "backend_evidence_complete": true,
+    "model_total_verified": true,
+    "fact_rows_verified": true,
+    "relationship_filter_verified": true,
+    "ui_refresh_requested": false,
+    "gpu_restart_events": [],
+    "native_frame_review": "passed"
+  }
+}

@@ -1,5 +1,25 @@
 # Power BI Desktop 2.159.883.0 assessment
 
+## Download recheck: November 24, 2026
+
+During integration of PRs #5–#8, a fresh download from the configured Microsoft
+URL returned a different installer again:
+
+- Version resource: `2.160.1151.0` (`FileVersion` and `ProductVersion`).
+- Length: `720229728` bytes.
+- SHA-256: `89ace9881d43a350e205c93da9681a8211a521b2ccd63211e1baf6020efdcb85`.
+- HTTP Last-Modified: `Mon, 23 Nov 2026 17:47:06 GMT`.
+- Expected 2.159.1231.0 SHA-256:
+  `55e8ee44aa908d75edaed4bdb1a34863f41c047951f3724f298486fe07049f2d`.
+
+At this recheck, the 2.159.1231.0 port remained useful for exact local installers
+but could not repair automatic setup against the new download. No 2.160 recipe
+was registered yet. The subsequent [2.160 port and validation](powerbi-2.160.md)
+records the current source support and its remaining release limits. The initial
+recheck inspected the installer without executing or committing it.
+
+## Original October assessment
+
 **October 20, 2026 — local compatibility candidate.** The guarded recipe has been
 ported and offline checks passed. Native acceptance and release certification are
 tracked separately below. RPM 18 targets this version; the 2.158 recipe remains
@@ -213,15 +233,16 @@ currently serves carries a download address.
 
 ### Native result on one experimental host
 
-Omarchy 4.5.0 with Hyprland 0.56.2, described in [Hyprland](hyprland.md). This
-is **not** the Fedora validation host and not release certification.
+Omarchy 4.5.0 (Arch based) with Hyprland 0.56.2, two monitors, NVIDIA RTX 3060
+with Intel Iris Xe. This is **not** the Fedora validation host and not release
+certification.
 
 - A genuinely empty managed profile completed `pbi-linux setup` in 5 minutes 38
   seconds, downloads included, with the published runtime 0.1.6-beta.1. Doctor
   passed all 20 checks.
 - With that runtime the window stayed blank on the two-monitor desktop because
   of a Wine defect unrelated to the Desktop version. The remaining checks used
-  a local runtime build containing the corrections.
+  a local runtime build with corrections that are proposed separately.
 - `tests/e2e/session.py --ui-refresh --save` on a three-table synthetic PBIP:
   refresh requested through the UI 14.33 seconds after launch; independent ADOMD
   queries confirmed total 300, the fact row count and the relationship filter;

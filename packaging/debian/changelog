@@ -1,3 +1,13 @@
+powerbi-linux (0.1.0-20~experimental1) experimental; urgency=medium
+
+  * Prepare community PRs #5-#8 and exact Desktop 2.160.1151.0 support.
+  * Compile the current CLI-owned WinRT shim for optional startup dependencies.
+  * Accept Arch/Omarchy experimentally and follow Hyprland theme preference.
+  * Keep the published runtime pin; Wine fixes require the separately supplied
+    integration runtime until a new runtime release is published and verified.
+
+ -- Power BI Linux <cavallaro88@users.noreply.github.com>  Wed, 25 Nov 2026 09:00:00 -0300
+
 powerbi-linux (0.1.0-19~experimental1) experimental; urgency=medium
 
   * Beta candidate for the 0.1.0-19 CLI on the experimental DEB suite.

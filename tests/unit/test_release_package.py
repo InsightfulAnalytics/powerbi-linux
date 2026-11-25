@@ -6,8 +6,8 @@ from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-RELEASE = '0.1.0-19'
-DEB_VERSION = '0.1.0-19~experimental1'
+RELEASE = '0.1.0-20'
+DEB_VERSION = '0.1.0-20~experimental1'
 
 
 def control_fields():
@@ -20,7 +20,7 @@ class ReleasePackageTest(unittest.TestCase):
     def test_package_versions_match_the_prepared_revision(self):
         spec = (ROOT / 'packaging/powerbi-linux.spec').read_text()
         self.assertIn('Version:        0.1.0\n', spec)
-        self.assertIn('Release:        19%{?dist}', spec)
+        self.assertIn('Release:        20%{?dist}', spec)
         fields = control_fields()
         self.assertEqual(fields['Version'], DEB_VERSION)
         self.assertIn('experimental', fields['Description'].lower())

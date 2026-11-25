@@ -44,16 +44,16 @@ These results apply to their recorded versions and test cases. They do not certi
 This does not expand Fedora's validation claims to other distributions or apply
 any resource preset. The instructions below are for the published Fedora RPM.
 
-Download the recommended **binary RPM** from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-19), then install it using DNF. The `.src.rpm` is for developers.
+Download the recommended **binary RPM** from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-20), then install it using DNF. The `.src.rpm` is for developers.
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-19.fc44.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-20.fc44.noarch.rpm
 ```
 
 > [!IMPORTANT]
 > **`pbi-linux setup` installs the rest.** It downloads and verifies the published runtime (with its matching source and evidence), WebView2 and .NET, and the pinned Power BI installer from Microsoft. You accept the terms and wait; installing the RPM alone does not install Power BI Desktop.
 
-Microsoft's [official Power BI Desktop download](https://www.microsoft.com/pt-br/download/details.aspx?id=58494) provides `PBIDesktopSetup_x64.exe`. **Its current version can differ from the release's validated version.** Microsoft replaced 2.159.883.0 with **2.159.1231.0** at the same address on November 2, 2026, so releases that pin the older build now fail the installer checksum unless you supply that exact file with `--installer`. The source tree defaults to **2.159.1231.0** and still accepts exact **2.159.883.0** and **2.158.1177.0** installers; other installer hashes are rejected. [Native validation and release readiness](docs/reference/powerbi-2.159.md) are tracked separately. WebView2 and .NET are prepared by setup; you do not need to choose or install those components yourself.
+Microsoft's [official Power BI Desktop download](https://www.microsoft.com/pt-br/download/details.aspx?id=58494) provides `PBIDesktopSetup_x64.exe`. **The source tree now targets exactly 2.160.1151.0**, served at the configured address when checked on November 24, 2026. Published releases pinning older builds still fail the installer checksum against that address. Exact **2.159.1231.0**, **2.159.883.0** and **2.158.1177.0** installers remain accepted as local inputs by the source tree; other hashes are rejected. [The 2.160 assessment](docs/reference/powerbi-2.160.md) separates recipe validation from native/release acceptance. WebView2 and .NET are prepared by setup; you do not need to choose or install those components yourself.
 
 ### How long does setup take?
 

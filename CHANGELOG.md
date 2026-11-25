@@ -4,6 +4,21 @@
 
 ### Unreleased — product repository and upstream review
 
+- Release RPM `0.1.0-20`, experimental DEB `0.1.0-20~experimental1` and Arch
+  revision 20 with community PRs #5–#8 and the 2.160 installer port. Automatic setup
+  pins the published, verified 0.1.7-pr-integration.1 runtime containing the Wine
+  fixes. Thanks to Tim (@InsightfulAnalytics) for PRs #5–#8. See the
+  [delivery notes](docs/releases/v0.1.0-20.md).
+
+- Port the exact guarded recipe to Power BI Desktop 2.160.1151.0 and select it
+  for new source-tree setup. Reuse the five byte-identical HTML resources and
+  unchanged email/editor hooks; relocate the native Options metadata and the
+  guarded Analysis Services impersonation call site. Keep all three prior
+  installer recipes for local inputs and maintenance. Add the optional package
+  type shapes required at startup to the CLI-owned WinRT shim; package actions
+  remain unsupported. See the
+  [2.160 assessment](docs/reference/powerbi-2.160.md).
+
 - Keep the report on screen while a modal dialog is open (runtime
   0.1.7-local.10). The runtime's frame receiver copies browser frames into
   Desktop's window only while their host is exposed, and its test stopped at
@@ -79,16 +94,8 @@
   2.159.1231.0. Repair applies it; `pbi-linux doctor` reports it as
   `auto-recovery-dialog`. See [legacy HTML dialogs](docs/reference/legacy-html.md#desktop-would-not-close-auto-recovery-dialog-2026-11-21).
 
-- List the pipes of the named pipe root directory, `\\.\pipe\`. Wine failed
-  every listing of it with `STATUS_BAD_DEVICE_TYPE`, so tools that find a
-  program by the name of its pipe saw nothing: the pbir CLI reported no running
-  Desktop, and `pbir desktop` and `pbir model -q` could not reach the open
-  report. `tools/test-pipe-directory.py` checks the listing in a disposable
-  prefix and joins the components suite. Needs a rebuilt runtime. See
-  [named pipes](docs/reference/named-pipes.md).
-
 - Port the guarded recipe to Power BI Desktop 2.159.1231.0, which Microsoft has
-  served at the pinned address since November 2, 2026, and make it the default.
+  served at the pinned address from November 2, 2026 until the 2.160 replacement.
   Releases pinning 2.159.883.0 fail the automatic download with a checksum error.
   The five legacy HTML resources are byte-identical and moved by 328 bytes; the
   Options native method differs only in two user-string tokens. Exact 2.159.883.0
@@ -138,25 +145,27 @@
   source archive and the export. The Arch guide now rebuilds with `makepkg -sif`:
   without `-f`, makepkg reinstalled the package built before the pull.
 
-- Accept Arch Linux and Omarchy as experimental platforms and add a source
-  `PKGBUILD`. Correct four Wine defects found on a two-monitor Hyprland desktop:
-  lost monitor placement for single-mode outputs (blank window), an abort of the
-  clipboard owner on a primary selection event, a visible-region race that left
-  half of the window blank after a tiled resize, and rounding of the maximum
-  date that made Analysis Services launch SQLDUMPER at every start. No published
-  runtime contains them yet. See [Hyprland](docs/reference/hyprland.md) and the
-  [Arch guide](docs/user/arch.md).
-
-- Follow the light/dark preference on Hyprland sessions too, through the same
-  `color-scheme` key and only while Desktop's theme selection is System default.
-  Other desktops are still skipped. See [theme scope](docs/reference/gnome-theme.md).
-
 - Prepare the 0.1.0-19 beta CLI release (RPM `0.1.0-19`, experimental DEB
   `0.1.0-19~experimental1`). The setup manifest pins Runtime 0.1.6-beta.1
   binary, complete corresponding source and evidence with fixed SHA-256 values;
   exact-archive certification gaps remain recorded in that evidence. Packaging ships
   no runtime, installer, prefix or ODBC DLL, and repair/update do not restore an ODBC
   manager missing from an existing profile. Add a version/payload consistency test.
+
+- Correct four Wine defects found on a two-monitor Hyprland desktop: lost
+  monitor placement for single-mode outputs (blank window), an abort of the
+  clipboard owner on a primary selection event, a visible-region race that left
+  half of the window blank after a tiled resize, and rounding of the maximum
+  date that made Analysis Services launch SQLDUMPER at every start. No published
+  runtime contains them yet. See [Hyprland](docs/reference/hyprland.md).
+
+- Accept Arch Linux and Omarchy as experimental platforms and add a source
+  `PKGBUILD` that packages the checkout. The doctor labels them experimental and
+  names `samba` as the `ntlm_auth` provider. See the [Arch guide](docs/user/arch.md).
+
+- Follow the light/dark preference on Hyprland sessions too, through the same
+  `color-scheme` key and only while Desktop's theme selection is System default.
+  Other desktops are still skipped. See [theme scope](docs/reference/gnome-theme.md).
 
 - Keep zero-valued Wine x64 protection metadata sparse on Linux, preserving
   protections, table addresses, edge bytes and fallback behavior. Add helper
@@ -210,6 +219,14 @@
 - Guard runtime packaging against unreviewed patch files, failed/stale builds, changed sources/payload and accidental artifact overwrite. Record the successful build and exact builder/input identity; retain unchanged runtime 0.1.3 artifacts.
 - Review the 87 neutron-wine commits through `8ecb7fd`, with decisions for all 59 changed patch files and separate external-library scope. Add a repeatable consistency audit to quick QA. No new runtime patch is enabled.
 - Stage mouse capture tracking, rendering-mode glyph caching and signed DPI arithmetic separately. The actual Wine DPI helper fails six of fourteen arithmetic controls before the port and passes all after; server/compositor validation remains pending.
+
+- List the pipes of the named pipe root directory, `\\.\pipe\`. Wine failed
+  every listing of it with `STATUS_BAD_DEVICE_TYPE`, so tools that find a
+  program by the name of its pipe saw nothing: the pbir CLI reported no running
+  Desktop, and `pbir desktop` and `pbir model -q` could not reach the open
+  report. `tools/test-pipe-directory.py` checks the listing in a disposable
+  prefix and joins the components suite. Needs a rebuilt runtime. See
+  [named pipes](docs/reference/named-pipes.md).
 
 ### RPM release 18 — automatic setup and update, 2026-10-25
 

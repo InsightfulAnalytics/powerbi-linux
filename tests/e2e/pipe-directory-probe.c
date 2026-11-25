@@ -198,6 +198,21 @@ int wmain( void )
         CloseHandle( dir );
     }
 
+    /* A restart rewinds the scan but must ignore a replacement search mask. */
+    if ((dir = open_root( FILE_LIST_DIRECTORY )))
+    {
+        status = query( dir, buffer, sizeof(buffer), 1, FALSE, name, TRUE, &io );
+        CHECK( status == S_SUCCESS && contains_name( buffer, 1, name ),
+               "initial exact mask: %08lx", (unsigned long)status );
+        swprintf( mask, 128, L"%lsbeta.part", base );
+        status = query( dir, buffer, sizeof(buffer), 1, FALSE, mask, TRUE, &io );
+        CHECK( status == S_SUCCESS && contains_name( buffer, 1, name ),
+               "restart must keep the original exact mask: %08lx", (unsigned long)status );
+        status = query( dir, buffer, sizeof(buffer), 1, FALSE, NULL, FALSE, &io );
+        CHECK( status == S_NO_MORE_FILES, "after restarted exact mask: %08lx", (unsigned long)status );
+        CloseHandle( dir );
+    }
+
     /* every information class, on a fresh handle each */
     for (i = 0; i < ARRAYSIZE(classes); i++)
     {

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "repository": "https://github.com/cavallaro88/powerbi-linux",
-  "recommended_preview": "v0.1.0-19",
+  "recommended_preview": "v0.1.0-20",
   "historical_sources": "Reconstructed from original source RPMs/source exports. No private Git history was imported. Archived CI metadata omitted from historical runtime snapshots; RPM 12 points at the reviewed published product commit. Each release's source_commit is this repository's tag commit. Commit identifiers recorded before publication, inside released snapshots and in the published provenance assets, belong to the earlier development history and cannot be resolved here. Alpha releases 1-11 and runtime recipes 0.1.0-0.1.3 were withdrawn from GitHub Releases after publication; their digests are preserved here as the record of the published artifacts.",
   "releases": [
     {
@@ -876,6 +876,104 @@
           "name": "SHA256SUMS",
           "sha256": "fce1ab11977074f124eec670fe6a16347a7bc48093765836238242e6bb7e78df",
           "size": 512
+        }
+      ]
+    },
+    {
+      "component": "runtime",
+      "version": "0.1.7-pr-integration.1",
+      "tag": "runtime-v0.1.7-pr-integration.1",
+      "source_commit": "2c886b4bdcb6ede15afeb54315fa543eae14f91e",
+      "original_date": "2026-11-25",
+      "prerelease": true,
+      "source_only": false,
+      "source_origin": {
+        "kind": "clean-source-build",
+        "name": "powerbi-linux-source-runtime-0.1.7-pr-integration.1.tar.gz",
+        "sha256": "799d8c6fab4406a34ef4bc37cb48bdebfed48f98f708eed93d57aec04f0255c6"
+      },
+      "ci_metadata_omitted": [],
+      "notes": "docs/releases/runtime-v0.1.7-pr-integration.1.md",
+      "url": "https://github.com/cavallaro88/powerbi-linux/releases/tag/runtime-v0.1.7-pr-integration.1",
+      "assets": [
+        {
+          "name": "SHA256SUMS",
+          "sha256": "db23176fd696b5b3b19df72499fd3cd4f704ecd7d883c0c87809b493c6009c31",
+          "size": 432
+        },
+        {
+          "name": "SOURCE-PROVENANCE.json",
+          "sha256": "0be385ae3585648446a376499a7fa0fe9ce9e5b2c8020a9c12128684ec65b14b",
+          "size": 509
+        },
+        {
+          "name": "powerbi-linux-runtime-0.1.7-pr-integration.1-x86_64.tar.xz",
+          "sha256": "0128b0f2bb2d4ab098767f96f9492223015df6f57d28d954170e0e031a5ae482",
+          "size": 88213148
+        },
+        {
+          "name": "powerbi-linux-source-runtime-0.1.7-pr-integration.1.tar.gz",
+          "sha256": "799d8c6fab4406a34ef4bc37cb48bdebfed48f98f708eed93d57aec04f0255c6",
+          "size": 52857970
+        },
+        {
+          "name": "release-evidence-beta.json",
+          "sha256": "ee9d2cb22152644b65be2d0feb10cb8060347fc6d074acbd26ca8e7033d52b9a",
+          "size": 5775
+        }
+      ]
+    },
+    {
+      "component": "rpm",
+      "version": "0.1.0-20",
+      "tag": "v0.1.0-20",
+      "source_commit": "a15377c75f0068fad60d517b8e84859a4e5a9a5f",
+      "original_date": "2026-11-25",
+      "prerelease": true,
+      "source_only": false,
+      "source_origin": {
+        "kind": "exact-merged-main-source",
+        "name": "powerbi-linux-source-0.1.0-20.tar.gz",
+        "sha256": "96d80b19572bcb9a04cb1a9456a6181015f1a833203661c5d02550add9d8fce2"
+      },
+      "ci_metadata_omitted": [],
+      "notes": "docs/releases/v0.1.0-20.md",
+      "url": "https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-20",
+      "assets": [
+        {
+          "name": "SHA256SUMS",
+          "sha256": "77bd524d35dc056c36d963913fe650cbe581c3fc89614568089a239397645d53",
+          "size": 600
+        },
+        {
+          "name": "SOURCE-PROVENANCE.json",
+          "sha256": "48daed83775d69f64a0948e573c6c0df2560a359b968fe26205848a0f5d55152",
+          "size": 879
+        },
+        {
+          "name": "package-evidence.json",
+          "sha256": "eb2582a5d62ddbf8c0ae8fa8d8db59d8b0b31fde4605c4a5cf77e106a05dcbd4",
+          "size": 1160
+        },
+        {
+          "name": "powerbi-linux-0.1.0-20.fc44.noarch.rpm",
+          "sha256": "81355691be5a285d7d8dfd6ba19c2e0e8fbe4fcb735e97011716833b009771b1",
+          "size": 315525
+        },
+        {
+          "name": "powerbi-linux-0.1.0-20.fc44.src.rpm",
+          "sha256": "0de467716a1c61ba791f343c856d9f94250b91bd2f870848790f895a4713f6f0",
+          "size": 489342
+        },
+        {
+          "name": "powerbi-linux-source-0.1.0-20.tar.gz",
+          "sha256": "96d80b19572bcb9a04cb1a9456a6181015f1a833203661c5d02550add9d8fce2",
+          "size": 477222
+        },
+        {
+          "name": "powerbi-linux_0.1.0-20.experimental1_amd64.deb",
+          "sha256": "1c6f0aa6662ddb52c9f410693578de331b3db65d06275c17b5b923b3b788e6f1",
+          "size": 260136
         }
       ]
     }

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Guarded Options-only layout and selection correction for the two recipes."""
+"""Guarded Options-only layout and selection correction for exact Desktop builds."""
 import hashlib
 import struct
 from pathlib import Path
@@ -9,11 +9,13 @@ BASELINES = {
     'a700f3e4b37e586d5529518176573ad62c88c79fe76525a46d0a437b23d0a855': ('2.158.1177.0', 0),
     'a2c3db990ed08e371356aec9055d9d46026978413472512873385593917e6c94': ('2.159.883.0', 256),
     '072a113c12b0cfb170e8ab00eb3e05a58237d2581ac9c479e9e4c858667d7749': ('2.159.1231.0', 328),
+    '9196e9d2c56a0ab88ff898d52604558cdc7b468a5407b18652c76dc158932cd6': ('2.160.1151.0', -704),
 }
 PATCHED = {
     '2.158.1177.0': '4b83723847d64750786289d7eb86c23e40a2b5f276f3ef5b9e58652b1872a560',
     '2.159.883.0': '5bf9af170da38c355ab2c3350651e5fed4a3321f3144af7d0ec77a80e4bd4220',
     '2.159.1231.0': '3b0639cf526493de18e7d088561f0bfcbb7a528917b4c3e1424ec8637ac260c1',
+    '2.160.1151.0': 'cbedb7735ecfded804b4d01ee5a93c0c8b6cb190e48254fc6478709bbb34286e',
 }
 JQUERY_OFFSET, JQUERY_SIZE = 9028422, 4401
 OPTIONS_OFFSET, OPTIONS_SIZE = 8977334, 2296
@@ -65,6 +67,13 @@ def _transform_resources(source, delta):
 # IsResizable flag. Other dialogs keep their styles. The relocated fat getter
 # header is four-byte aligned; its body has no locals and a maximum stack of four.
 _NATIVE = {
+    # 2.160.1151.0: identical StartResize/getter behavior, with member and user
+    # string tokens resolved against this build's original metadata. The getter
+    # still occupies the aligned slot 44 bytes into the compacted method.
+    -704: (285600,
+        'fd850a6de95bfcdde92a53948b23fb7e543bf28cb99b31a82d05a99f5a949cbe',
+        bytes.fromhex('aa031d350b02031f0a5828cd1800062a280400000a72140a0470038ce6040002282300000a738d04000a7a000330040045000000000000000228290a000a25256f2a0a000a2000000200606f2b0a000a0228af1800062c2402284809000a72a21b087028ca00000a2c1225256fa40a000a2000000400606fa50a000a2a00000000'),
+        (103821374, 277167, 293324)),
     0: (286368,
         '6a542d1d4c1bb19d6df1d9591792d903c3d6d7b7694bc93360172f7d2f2e8007',
         bytes.fromhex('aa031d350b02031f0a5828cc1800062a280400000a7249090470038ce7040002282300000a739b04000a7a000330040045000000000000000228320a000a25256f330a000a2000000200606f340a000a0228ae1800062c2402285609000a72d71a087028ca00000a2c1225256fad0a000a2000000400606fae0a000a2a00000000'),

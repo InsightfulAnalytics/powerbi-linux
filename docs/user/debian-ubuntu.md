@@ -9,21 +9,32 @@
 
 ## Install
 
-Use an experimental DEB supplied with its SHA-256 and corresponding project
-sources, or [reproduce a post-merge build](../development/build.md#experimental-deb).
-The candidate filename is `powerbi-linux_0.1.0-19.experimental1_amd64.deb`;
-this guide does not imply that it has already been published on GitHub. An
-unpublished `0.1.0-19~experimental1` beta candidate also exists in the source tree,
-with automatic runtime setup deliberately pending.
+The published **0.1.0-20 beta** supports Ubuntu 24.04/26.04 and Debian 13
+experimentally. Download these two files into the same directory:
 
-From the directory containing the package and checksum:
+- [powerbi-linux_0.1.0-20.experimental1_amd64.deb](https://github.com/cavallaro88/powerbi-linux/releases/download/v0.1.0-20/powerbi-linux_0.1.0-20.experimental1_amd64.deb)
+- [SHA256SUMS](https://github.com/cavallaro88/powerbi-linux/releases/download/v0.1.0-20/SHA256SUMS)
+
+The [release page](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-20)
+also provides corresponding project sources and provenance. The downloaded DEB
+filename uses `.experimental1`; its internal package version is
+`0.1.0-20~experimental1`.
+
+From the download directory, verify the files before installing:
 
 ```bash
-sha256sum -c powerbi-linux_0.1.0-19.experimental1_amd64.deb.sha256
+sha256sum --check --ignore-missing SHA256SUMS
 sudo apt update
-sudo apt install ./powerbi-linux_0.1.0-19.experimental1_amd64.deb
+sudo apt install ./powerbi-linux_0.1.0-20.experimental1_amd64.deb
 pbi-linux setup
 ```
+
+The checksum check must report `OK` for the DEB. `--ignore-missing` skips the
+other release assets listed in SHA256SUMS that you did not download.
+
+Automatic setup is available in this release. It selects **Power BI Desktop
+2.160.1151.0**, runtime **0.1.7-pr-integration.1**, WebView2 and .NET; you do not
+need to build or select those components yourself.
 
 APT resolves Linux dependencies; setup separately downloads and verifies the
 pinned runtime, Power BI, .NET and WebView2 after terms acceptance. Installing the
@@ -62,8 +73,19 @@ or retaining a rollback snapshot. Back up important files yourself: interruption
 or failure can require repair or reinstallation. Old profile directories are
 not automatically deleted. See the [maintenance policy](updates.md).
 
-Install a newer DEB with `sudo apt install ./new-package.deb`. Updating the Linux
-package does not reinstall or upgrade Desktop automatically; see [updates](updates.md).
+For an existing installation, close Power BI, download and verify the release
+files as above, then update the tools and managed runtime:
+
+```bash
+sudo apt install ./powerbi-linux_0.1.0-20.experimental1_amd64.deb
+pbi-linux update
+pbi-linux doctor
+```
+
+Updating the DEB changes the project tools; `pbi-linux update` changes the managed
+runtime. Both preserve the installed Desktop version. `pbi-linux setup` creates a
+fresh installation and does not upgrade an existing Desktop installation. See
+[updates](updates.md).
 
 ```bash
 sudo apt remove powerbi-linux

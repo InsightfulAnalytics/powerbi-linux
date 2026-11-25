@@ -13,7 +13,7 @@ Allow approximately **9 GiB for Power BI**, plus its compatibility components, d
 
 ## Release availability
 
-**RPM 18 is the current published preview** and enables automatic downloads. `pbi-linux setup` resolves the published Runtime 0.1.5 with its complete corresponding source and exact-archive evidence, plus the pinned Power BI installer from Microsoft. The runtime's two-hour soak remains pending; see [known issues](known-issues.md).
+**RPM 0.1.0-20 is the current published beta** and enables automatic downloads. `pbi-linux setup` selects Power BI Desktop **2.160.1151.0** and the published runtime **0.1.7-pr-integration.1**, together with its corresponding sources and technical evidence. The [Ubuntu/Debian DEB](debian-ubuntu.md) provides the same guided setup.
 
 Earlier published previews (RPM 12–13) need explicit local inputs, and their runtime releases contain source recipes, not compiled packages. Installing such an RPM alone does not install Power BI Desktop.
 
@@ -21,10 +21,10 @@ The manual route remains available: see the [developer installation contract](..
 
 ## 1. Install the project tools
 
-Download the binary `.noarch.rpm` from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-19). The `.src.rpm` is for developers. Open a terminal in the download folder and run, replacing the filename with the package you downloaded:
+Download the binary `.noarch.rpm` from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-20). The `.src.rpm` is for developers. Open a terminal in the download folder and run, replacing the filename with the package you downloaded:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-19.fc44.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-20.fc44.noarch.rpm
 ```
 
 DNF installs the Linux dependencies. The project tools install Power BI separately for your user.
@@ -49,7 +49,7 @@ Microsoft's [official Power BI Desktop download page](https://www.microsoft.com/
 pbi-linux setup --installer '/path/to/PBIDesktopSetup_x64.exe'
 ```
 
-**The EXE must match the project's validated version.** Microsoft may offer a newer version before this project supports it. The page offered 2.159.883.0 when checked on October 19, 2026; RPM 18 defaults to that version and also accepts **2.158.1177.0**. On November 2, 2026 Microsoft replaced it with **2.159.1231.0** at the same address: a release that pins 2.159.883.0 then stops with a checksum error during the automatic download. The source tree defaults to 2.159.1231.0 and keeps accepting the two older exact installers when you supply them. Setup checks the file and explains a mismatch; do not skip checksum checks or use untrusted mirrors. Version hashes and advanced local-file options are in the [input contract](../reference/installation-lifecycle.md#required-inputs).
+**The EXE must match an exact registered recipe.** The source tree targets **2.160.1151.0**, the Microsoft download checked on November 24, 2026, and accepts exact **2.159.1231.0**, **2.159.883.0** and **2.158.1177.0** installers as local inputs. Published releases with older pins still reject the newer download. Setup checks the file before provisioning; do not skip checksum checks or use untrusted mirrors. See [2.160 validation and limits](../reference/powerbi-2.160.md) and the [input contract](../reference/installation-lifecycle.md#required-inputs).
 
 ## 3. Open your reports
 

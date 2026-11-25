@@ -8,7 +8,7 @@
 # `pbi-linux setup`; no hook runs Wine, setup or a download.
 pkgname=powerbi-linux
 pkgver=0.1.0
-pkgrel=19
+pkgrel=20
 pkgdesc='Experimental Power BI Desktop compatibility tools for Linux (community Wine runtime launcher)'
 arch=('x86_64')
 url='https://github.com/cavallaro88/powerbi-linux'

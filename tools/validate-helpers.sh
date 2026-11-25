@@ -16,6 +16,8 @@ mcs -target:library -out:.local/helper-check/unsigned/WinRTStubs.dll src/helpers
 mono .local/helper-check/SignStubs.exe .local/helper-check/unsigned/WinRTStubs.dll \
     .local/helper-check/WinRTStubs.dll .local/helper-check/stubs.snk
 sn -vf .local/helper-check/WinRTStubs.dll
+mcs -r:.local/helper-check/WinRTStubs.dll -out:.local/helper-check/winrt-stubs-probe.exe tests/e2e/winrt-stubs-probe.cs
+mono .local/helper-check/winrt-stubs-probe.exe
 mcs -target:library -r:System.Windows.Forms -r:System.Drawing \
     -out:.local/helper-check/unsigned/PowerBISaveDialog.dll src/helpers/PowerBISaveDialog.cs
 mono .local/helper-check/PatchSavePrompt.exe --sign-dialog \
