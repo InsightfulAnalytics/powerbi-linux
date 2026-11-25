@@ -13,7 +13,7 @@ Allow approximately **9 GiB for Power BI**, plus its compatibility components, d
 
 ## Release availability
 
-**RPM 18 is the current published preview** and enables automatic downloads. `pbi-linux setup` resolves the published Runtime 0.1.5 with its complete corresponding source and exact-archive evidence, plus the pinned Power BI installer from Microsoft. The runtime's two-hour soak remains pending; see [known issues](known-issues.md).
+**RPM 0.1.0-20 is the current published beta** and enables automatic downloads. `pbi-linux setup` selects Power BI Desktop **2.160.1151.0** and the published runtime **0.1.7-pr-integration.1**, together with its corresponding sources and technical evidence. The [Ubuntu/Debian DEB](debian-ubuntu.md) provides the same guided setup.
 
 Earlier published previews (RPM 12–13) need explicit local inputs, and their runtime releases contain source recipes, not compiled packages. Installing such an RPM alone does not install Power BI Desktop.
 
