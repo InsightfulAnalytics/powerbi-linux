@@ -164,5 +164,15 @@
     ],
     "gpu_restart_events": [],
     "native_frame_review": "passed: expected report table and total 300, ribbon and editor panels rendered"
+  },
+  "native_integration_runtime_reopen": {
+    "runtime_sha256": "0128b0f2bb2d4ab098767f96f9492223015df6f57d28d954170e0e031a5ae482",
+    "backend_evidence_complete": true,
+    "model_total_verified": true,
+    "fact_rows_verified": true,
+    "relationship_filter_verified": true,
+    "ui_refresh_requested": false,
+    "gpu_restart_events": [],
+    "native_frame_review": "passed"
   }
 }

@@ -88,7 +88,9 @@ are recorded in the assessment JSON. A separate session on the published default
 runtime reopened the saved project without refreshing and independently verified
 the same rows, total and relationship filter. Its native frame was also reviewed. A further refresh and save session passed on
 that published runtime too, with the same independent data checks and native
-frame review. No Wine rebuild is required for this Desktop port.
+frame review. A separate saved-project reopen also passed on the exact integration runtime,
+including independent data queries and native frame review. No Wine rebuild is
+required for this Desktop port.
 
 ## Scope
 

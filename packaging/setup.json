@@ -2,11 +2,11 @@
   "schema": 1,
   "status": "ready",
   "runtime": {
-    "version": "0.1.6-beta.1",
-    "url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.6-beta.1/powerbi-linux-runtime-0.1.6-beta.1-x86_64.tar.xz",
-    "sha256": "7a24a7dcf950457c65b8eac90e6b2b7640a6d460279d29fce7f3867a6064d421",
-    "source_url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.6-beta.1/powerbi-linux-source-runtime-0.1.6-beta.1.tar.gz",
-    "evidence_url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.6-beta.1/release-evidence-beta.json"
+    "version": "0.1.7-pr-integration.1",
+    "url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.7-pr-integration.1/powerbi-linux-runtime-0.1.7-pr-integration.1-x86_64.tar.xz",
+    "sha256": "0128b0f2bb2d4ab098767f96f9492223015df6f57d28d954170e0e031a5ae482",
+    "source_url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.7-pr-integration.1/powerbi-linux-source-runtime-0.1.7-pr-integration.1.tar.gz",
+    "evidence_url": "https://github.com/cavallaro88/powerbi-linux/releases/download/runtime-v0.1.7-pr-integration.1/release-evidence-beta.json"
   },
   "powerbi": {
     "version": "2.160.1151.0",
