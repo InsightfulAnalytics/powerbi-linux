@@ -49,8 +49,7 @@ removes its prefix.
 
 | Check | Without the correction | With the correction |
 |---|---|---|
-| `tools/test-modal-frames.py`, published 0.1.7-pr-integration.1 (SHA-256 `0128b0f2...e482`) | 1 passed, 2 failed: the host kept the previous frame while its main window was disabled | |
-| `tools/test-modal-frames.py`, runtime built from this source tree | | See the pull request; recorded below once built |
+| `tools/test-modal-frames.py` | 1 passed, 2 failed on published 0.1.7-pr-integration.1 (SHA-256 `0128b0f2...e482`): the host kept the previous frame while its main window was disabled | 3 passed on a runtime built from this source tree (local label 0.1.7-hyprland-fixes.1, SHA-256 `7712ab97...e941`) |
 | Options from the Settings button, Hyprland headless output, Desktop 2.159.1231.0, local runtimes | Main window empty | Report, ribbon and panes shown behind Options |
 | Export template, same session | Last frame kept | Report shown |
 | A page change made while Export template is open | Not tried | Reached the screen |
