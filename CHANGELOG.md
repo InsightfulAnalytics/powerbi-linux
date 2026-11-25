@@ -10,6 +10,16 @@
   fixes. Thanks to Tim (@InsightfulAnalytics) for PRs #5–#8. See the
   [delivery notes](docs/releases/v0.1.0-20.md).
 
+- Fix four legacy HTML dialog faults, for Desktop 2.159.1231.0 and 2.160.1151.0
+  (`pbi-linux repair` applies them; `doctor` reports each). OK now works in the
+  dialogs that serialize their view model with `ko.toJSON` (Options, Export
+  template, View as, connector warnings and about 15 more): Wine's JScript threw
+  while walking the .NET host object. The "Auto recovery" dialog's OK closes
+  Desktop again. Options fades in where the compositor honours window opacity
+  (Hyprland). Data source settings no longer shows scroll bars over its sort
+  button. See [legacy HTML](docs/reference/legacy-html.md#ok-did-nothing-in-most-legacy-dialogs-2026-11-21)
+  and [Options](docs/reference/options-dialog.md#november-21-options-was-an-empty-frame-on-hyprland).
+
 - Port the exact guarded recipe to Power BI Desktop 2.160.1151.0 and select it
   for new source-tree setup. Reuse the five byte-identical HTML resources and
   unchanged email/editor hooks; relocate the native Options metadata and the
