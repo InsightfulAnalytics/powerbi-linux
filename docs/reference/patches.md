@@ -14,8 +14,13 @@ and [Edit Permissions](permissions-wayland.md).
 | Wine shared system cursor resources | Resolve foreign standard cursor identities with bounded IPC and load local images | LGPL-2.1-or-later; scoped 0.1.3 component/compositor candidate, see [cursor](cursor.md) |
 | Wine HTML signed Int64 | Initialize legacy HTML Options when .NET exposes Int64 cache properties; HTML ES5+ only | Required; LGPL-2.1-or-later; seven numeric cases, x64 component |
 | Wine OLE DB VARIANT conversions | Numeric/boolean values otherwise appeared as zero | Required; LGPL-2.1-or-later |
+| Wine named pipe directory listing | Listing `\\.\pipe\` failed with `STATUS_BAD_DEVICE_TYPE`, so tools that find a program by its pipe name saw none; the pbir CLI reported no running Desktop | LGPL-2.1-or-later; not in a published runtime yet, see [named pipes](named-pipes.md) |
 | Wine normal Wayland resize | Accept normal compositor size hints after initial configure for resizable windows; private 0.1.4 component/Desktop candidate, see [PaperWM](paperwm.md) | LGPL-2.1-or-later |
 | Wine Wayland parent | Owned dialogs otherwise remained behind the main window | Required; LGPL-2.1-or-later |
+| Wine single-mode monitor placement | Wayland outputs lost their position, so every monitor sat at the origin and a window on a second monitor was never painted | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
+| Wine Wayland data-control primary selection | A compositor that sends `primary_selection` to a version 1 device aborted the clipboard owner | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
+| Wine visible-region race | A resize by the window's thread could leave the frame receiver's cached DC clipped to the old client area | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
+| Wine OLE Automation maximum date | Rounding the last half second of year 9999 produced an invalid date; Analysis Services then launched SQLDUMPER at every start | LGPL-2.1-or-later; local build only, see [Hyprland](hyprland.md) |
 | Wine cgroup reporting | Report cgroup limits to CLR/Chromium/AS | Required; LGPL-2.1-or-later; initializes the path buffer in the product port |
 | Wine secur32 status | Return NTSTATUS rather than BOOL from LsaFreeReturnBuffer | Required; source fix replaces the old machine-code patch; LGPL-2.1-or-later |
 | DXVK presentation | Scoped GDI delivery for WebView HWND swapchains | Required; DXVK upstream terms, preserving Neutron-derived provenance |

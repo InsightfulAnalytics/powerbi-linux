@@ -1,6 +1,6 @@
 # Install Power BI Desktop on Fedora
 
-For the experimental Ubuntu/Debian package, use the [DEB guide](debian-ubuntu.md).
+For the experimental Ubuntu/Debian package, use the [DEB guide](debian-ubuntu.md). For Arch Linux or Omarchy, use the [Arch guide](arch.md).
 
 > [!WARNING]
 > **Beta software.** Read [known issues](known-issues.md), keep complete project backups and try copies of your reports first. Microsoft does not support this community installation.
@@ -21,10 +21,10 @@ The manual route remains available: see the [developer installation contract](..
 
 ## 1. Install the project tools
 
-Download the binary `.noarch.rpm` from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-19). The `.src.rpm` is for developers. Open a terminal in the download folder and run, replacing the filename with the package you downloaded:
+Download the binary `.noarch.rpm` from [Releases](https://github.com/cavallaro88/powerbi-linux/releases/tag/v0.1.0-20). The `.src.rpm` is for developers. Open a terminal in the download folder and run, replacing the filename with the package you downloaded:
 
 ```bash
-sudo dnf install ./powerbi-linux-0.1.0-19.fc44.noarch.rpm
+sudo dnf install ./powerbi-linux-0.1.0-20.fc44.noarch.rpm
 ```
 
 DNF installs the Linux dependencies. The project tools install Power BI separately for your user.
@@ -49,7 +49,7 @@ Microsoft's [official Power BI Desktop download page](https://www.microsoft.com/
 pbi-linux setup --installer '/path/to/PBIDesktopSetup_x64.exe'
 ```
 
-**The EXE must match the project's validated version.** Microsoft may offer a newer version before this project supports it. The page offered 2.159.883.0 when checked on October 19, 2026; RPM 18 defaults to that version and also accepts **2.158.1177.0**. Setup checks the file and explains a mismatch; do not skip checksum checks or use untrusted mirrors. Version hashes and advanced local-file options are in the [input contract](../reference/installation-lifecycle.md#required-inputs).
+**The EXE must match an exact registered recipe.** The source tree targets **2.160.1151.0**, the Microsoft download checked on November 24, 2026, and accepts exact **2.159.1231.0**, **2.159.883.0** and **2.158.1177.0** installers as local inputs. Published releases with older pins still reject the newer download. Setup checks the file before provisioning; do not skip checksum checks or use untrusted mirrors. See [2.160 validation and limits](../reference/powerbi-2.160.md) and the [input contract](../reference/installation-lifecycle.md#required-inputs).
 
 ## 3. Open your reports
 

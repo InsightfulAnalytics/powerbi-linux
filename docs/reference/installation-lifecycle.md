@@ -1,6 +1,6 @@
 # Installation and lifecycle
 
-The tested target is Fedora 44 x86_64 on native Wayland; [Ubuntu/Debian DEBs](../user/debian-ubuntu.md) are experimental. Install the RPM with DNF or the DEB with APT so dependencies are resolved. `samba-winbind-clients` on Fedora and `winbind` on Debian/Ubuntu supply the local SSPI/NTLM helper; a Winbind daemon is not needed. Install the appropriate Vulkan driver for your GPU separately.
+The tested target is Fedora 44 x86_64 on native Wayland; [Ubuntu/Debian DEBs](../user/debian-ubuntu.md) and the [Arch source package](../user/arch.md) are experimental. Install the RPM with DNF, the DEB with APT or the Arch package with pacman so dependencies are resolved. `samba-winbind-clients` on Fedora, `winbind` on Debian/Ubuntu and `samba` on Arch supply the local SSPI/NTLM helper; a Winbind daemon is not needed. Install the appropriate Vulkan driver for your GPU separately.
 
 The runtime is built against glibc 2.39 in an Ubuntu build container to provide a conservative ABI baseline. This build choice alone does not certify Ubuntu compatibility.
 
@@ -8,9 +8,10 @@ The runtime is built against glibc 2.39 in an Ubuntu build container to provide 
 
 - Project runtime archive and its SHA-256, produced together by `runtime/build.py`.
 - Microsoft Power BI Desktop x64 installer matching a registered exact recipe.
-  The source-tree default is 2.159.883.0 in `runtime/sources.lock.json`;
-  2.158.1177.0 remains accepted for local inputs and existing profiles. RPM 18
-  accepts both exact installers. See the [current installation status](../user/install.md).
+  The source-tree default is 2.160.1151.0 in `runtime/sources.lock.json`,
+  checked against the Microsoft download on November 24, 2026; 2.159.1231.0,
+  2.159.883.0 and 2.158.1177.0 remain accepted for local inputs and existing profiles. RPM 18
+  accepts the two older exact installers. See the [current installation status](../user/install.md).
 - Microsoft fixed WebView2 x64 **154.0.4258.62 CAB**, automatically downloaded using the official URL and checksum in the lock. Use `--webview-runtime` to supply the same CAB offline. No Evergreen installer is needed as a project setup input.
 - .NET 4.0 prerequisite and .NET 4.8 installers, optionally passed with `--dotnet40-installer` and `--dotnet-installer`; otherwise downloaded from the official link and checked against the lock.
 
@@ -20,12 +21,14 @@ Download Microsoft installers from Microsoft. Consult their terms before using `
 
 Published releases before RPM 18 required an exact local runtime archive and its
 matching checksum; RPM 18 resolves the published runtime automatically. The
-manual route remains available and accepts both guarded installers. Installer identities are:
+manual route remains available and accepts the registered exact installers. Installer identities are:
 
 | Power BI | EXE SHA-256 |
 |---|---|
 | 2.158.1177.0 | `4924187834d34605c3046f01b876fba6a2cf36f864c36d16fd52c3f17a21009c` |
 | 2.159.883.0 | `5412131d1f5d535e42358cb6d496703c3c0cdf9267779ac9220171f58ce20cdd` |
+| 2.159.1231.0 | `55e8ee44aa908d75edaed4bdb1a34863f41c047951f3724f298486fe07049f2d` |
+| 2.160.1151.0 | `89ace9881d43a350e205c93da9681a8211a521b2ccd63211e1baf6020efdcb85` |
 
 Microsoft's [official download page](https://www.microsoft.com/pt-br/download/details.aspx?id=58494)
 may no longer offer the older validated installer. If you do not already have its

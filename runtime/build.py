@@ -20,8 +20,11 @@ from pbi_linux.common import check_digest, digest
 from pbi_linux import build_provenance
 
 WINE_PATCHES = ('wine-11.18-composition.patch','wine-11.18-oledb32-variant.patch',
+                'wine-11.18-named-pipe-directory.patch',
                 'wine-11.18-wayland-parent.patch','wine-11.18-cgroup-memory.patch','wine-11.18-secur32-status.patch','wine-11.18-jscript-int64.patch','wine-11.18-cursor-resource.patch','wine-11.18-wayland-normal-resize.patch',
-                'wine-11.18-vprot-sparse-zero.patch')
+                'wine-11.18-vprot-sparse-zero.patch','wine-11.18-single-mode-position.patch',
+                'wine-11.18-wayland-data-control-primary.patch','wine-11.18-visible-region-race.patch',
+                'wine-11.18-oleaut32-max-date.patch')
 
 
 def preparation_matches(marker, expected):
@@ -216,7 +219,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--prepare-only',action='store_true')
     p.add_argument('--package-only',action='store_true',help='Package an already completed runtime build')
-    p.add_argument('--runtime-version', default='0.1.6-beta.1', help='Version recorded in the manifest and archive filename')
+    p.add_argument('--runtime-version', default='0.1.7-pr-integration.1', help='Version recorded in the manifest and archive filename')
     p.add_argument('--bundled-sources',action='store_true',help='Build from the corresponding patched source archives in an exported project')
     p.add_argument('--wine-source')
     p.add_argument('--dxvk-source')

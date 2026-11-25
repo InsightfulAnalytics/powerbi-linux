@@ -6,8 +6,8 @@ from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[2]
-RELEASE = '0.1.0-19'
-DEB_VERSION = '0.1.0-19~experimental1'
+RELEASE = '0.1.0-20'
+DEB_VERSION = '0.1.0-20~experimental1'
 
 
 def control_fields():
@@ -20,7 +20,7 @@ class ReleasePackageTest(unittest.TestCase):
     def test_package_versions_match_the_prepared_revision(self):
         spec = (ROOT / 'packaging/powerbi-linux.spec').read_text()
         self.assertIn('Version:        0.1.0\n', spec)
-        self.assertIn('Release:        19%{?dist}', spec)
+        self.assertIn('Release:        20%{?dist}', spec)
         fields = control_fields()
         self.assertEqual(fields['Version'], DEB_VERSION)
         self.assertIn('experimental', fields['Description'].lower())
@@ -29,6 +29,16 @@ class ReleasePackageTest(unittest.TestCase):
         self.assertEqual(first, 'powerbi-linux (' + DEB_VERSION + ') experimental; urgency=medium')
         self.assertLess(changelog.index(DEB_VERSION), changelog.index('0.1.0-18~experimental2'))
         self.assertTrue((ROOT / 'docs/releases' / ('v' + RELEASE + '.md')).is_file())
+
+    def test_arch_recipe_matches_the_prepared_revision(self):
+        recipe = (ROOT / 'packaging/arch/PKGBUILD').read_text()
+        version, release = RELEASE.split('-')
+        self.assertIn('pkgver=' + version + '\n', recipe)
+        self.assertIn('pkgrel=' + release + '\n', recipe)
+        # Like the RPM and DEB, installing the package runs no hook of its own.
+        self.assertNotIn('install=', recipe)
+        # platforms.ntlm_help names this package as the ntlm_auth provider.
+        self.assertIn("'samba'", recipe)
 
     def test_setup_manifest_never_ships_a_placeholder_runtime_pin(self):
         manifest = json.loads((ROOT / 'packaging/setup.json').read_text())
