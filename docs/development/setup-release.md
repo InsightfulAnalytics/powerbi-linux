@@ -23,8 +23,8 @@ rejected before any Microsoft download.
 
 All downloads use fixed HTTPS URLs and SHA-256 checks. Power BI's installer must
 come from `download.microsoft.com`. WebView2, .NET, Gecko and fonts continue using
-the existing pinned prerequisite recipes. The 0.1.0-19 beta manifest points at
-Runtime 0.1.6-beta.1 with fixed binary, source and evidence URLs plus SHA-256 values.
+the existing pinned prerequisite recipes. The 0.1.0-20 beta manifest points at
+Runtime 0.1.7-pr-integration.1 with fixed binary, source and evidence URLs plus SHA-256 values.
 Do not substitute a placeholder checksum or an incremental investigation build. RPM 18
 keeps the published runtime 0.1.5 pin.
 
@@ -32,8 +32,8 @@ keeps the published runtime 0.1.5 pin.
 
 1. Validate the exact Power BI installer and adapt the guarded local patches. Keep
    the previous supported recipe usable for existing profiles. Do not just replace
-   old assembly hashes with new ones. The [2.159 assessment](../reference/powerbi-2.159.md)
-   describes the current blocker.
+   old assembly hashes with new ones. The [2.160 assessment](../reference/powerbi-2.160.md)
+   records the current exact installer and bounded native validation.
 2. Complete a full runtime build using the reviewed sources and build receipt.
    Package under a new immutable runtime version. Retain sources, notices and
    toolchain provenance; see [build](build.md).
@@ -59,7 +59,7 @@ new reviewed recipe and package; `update` activates the published runtime or an
 explicitly supplied archive.
 Installed metadata records `powerbi_version` and `recipe_id`; older installations
 are identified from their runtime's Power BI source record. The CLI retains exact
-2.158 and 2.159 recipes. Local installers select by their complete SHA-256; repair
+2.158, 2.159 and 2.160 recipes. Local installers select by their complete SHA-256; repair
 and runtime changes preserve the installed application version. Unregistered or
 inconsistent recipe identities are rejected before modifying the maintenance profile.
 

@@ -76,7 +76,7 @@
     "clean_setup_seconds": 338,
     "clean_setup_runtime": "0.1.6-beta.1",
     "doctor_checks_passed": 20,
-    "session_runtime": "local build with the four Hyprland corrections, not published",
+    "session_runtime": "local build with Wine corrections proposed separately, not published",
     "session_runtime_sha256": "73fb3dae562434c923ef04c47b6bbc14aade87be6f8b1374044c82e7f95deab4",
     "model_tables": 3,
     "expected_sum": 300,

@@ -1,4 +1,4 @@
-# Hyprland, multiple monitors and Arch
+# Hyprland and multiple monitors
 
 ## Diagnosis and corrections: 2026-11-17
 
@@ -139,9 +139,39 @@ only the first two patches gave the same results.
   The stress rounds show no regression, not the absence of the race.
 - Hyprland 0.56.2 offers no `xdg_toplevel_icon_manager_v1`, so windows have no
   per-window icon.
-- No published runtime contains these patches. The
-  [Arch guide](../user/arch.md) describes the local build route.
+- No published runtime contains these patches. Until one does, build a runtime
+  from the source tree; see [building](../development/build.md).
 
+## Fedora 44 headless date check: November 24, 2026
+
+The PR integration was built on Fedora 44 with the pinned builder image. A
+[native C equivalent](../../tests/e2e/variant-date-probe.c) of the C# date probe
+checks the same seven inputs and rejection of year 10000 without requiring .NET
+in the disposable Wine prefix. Compile it with MinGW-w64 (also available in the
+builder image):
+
+```bash
+x86_64-w64-mingw32-gcc -O2 -Wall tests/e2e/variant-date-probe.c -o /path/to/VariantDateProbe.exe -loleaut32
+WINEPREFIX=/path/to/disposable-prefix WINEDLLOVERRIDES='winemenubuilder.exe=d;mscoree,mshtml=d' /path/to/runtime/bin/wine /path/to/VariantDateProbe.exe
+```
+
+Use a fresh, private prefix, then stop its own wineserver and remove it. The
+recorded checks used a private runtime directory without a compositor socket;
+no Desktop session or user installation was opened or changed.
+
+| Runtime | Checks passed | Checks failed |
+|---|---|---|
+| Published 0.1.6-beta.1 | 6 | 2 |
+| Local 0.1.7-pr-integration.1 | 8 | 0 |
+
+Both failing inputs in the published runtime produced year 10000, which could
+not be converted back. The candidate kept those inputs in year 9999. The normal
+2026-to-2027 rollover still rounded up, and year 10000 as an input stayed
+rejected. Both disposable prefixes stopped and were removed.
+
+This validates the date conversion only. Monitor placement, clipboard exchange,
+the visible-region race and Desktop's trace startup were not exercised by this
+headless check; Fedora/GNOME graphical acceptance remains pending.
 ## Later corrections: 2026-11-18
 
 Four further Wine defects were found on the same host. None changes Desktop.

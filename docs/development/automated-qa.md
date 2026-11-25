@@ -175,8 +175,8 @@ QA installation or complete the pending public compositor/GUI orchestration.
 
 `python3 tools/test-pipe-directory.py --runtime /path/to/runtime` creates its
 own Wine-only prefix and pipes, lists `\\.\pipe\` through `FindFirstFile` and
-`NtQueryDirectoryFile` and removes the prefix. Seventy-five checks passed on
-0.1.7-local.8; 14 passed and 27 failed on 0.1.7-local.7. See
+`NtQueryDirectoryFile` and removes the prefix. Seventy-five checks passed on a
+runtime built with the patch; 14 passed and 27 failed on 0.1.6-beta.1. See
 [named pipes](../reference/named-pipes.md). It is part of the components
 suite and needs no Desktop.
 

@@ -21,8 +21,10 @@ ntdll format them for every directory information class. As on Windows:
 
 - an entry's size is the pipe's current instance count, its allocation size
   the maximum instance count, and its attributes `FILE_ATTRIBUTE_NORMAL`;
-- the search mask of the first query is kept for the handle, so a later query
-  without a mask goes on with it; a restart with a new mask replaces it;
+- the search mask of the first query is kept for the handle, including when a
+  later query supplies another mask with `RestartScan`; restarting only rewinds
+  the scan, as specified by
+  [NtQueryDirectoryFile](https://learn.microsoft.com/en-us/windows-hardware/drivers/ddi/ntifs/nf-ntifs-ntquerydirectoryfile);
 - a first query that matches nothing returns `STATUS_NO_SUCH_FILE`, a later
   one `STATUS_NO_MORE_FILES`;
 - listing needs `FILE_LIST_DIRECTORY` access.
@@ -38,14 +40,43 @@ access, a closed pipe and 1,100 pipes read through `FindNextFile`.
 
 | Runtime | Checks passed | Checks failed |
 |---|---|---|
-| 0.1.7-local.7, without the patch | 14 | 27 |
-| 0.1.7-local.8, with the patch; archive SHA-256 `39bff95bbb5a2a0928aa28a474ec211bebcded86a448b8fca31859e3c398417d` | 75 | 0 |
+| 0.1.6-beta.1, published | 14 | 27 |
+| Built from this change with `runtime/build.py` | 75 | 0 |
 
-With the patched Wine and a test report open in Desktop
-2.159.1231.0, `pbir desktop list` named the report and its pages, `pbir
-desktop refresh` reloaded a visual title changed on disk and `pbir desktop
-screenshot` saved the page. `pbir model -q` loads an ADOMD.NET client, as it
-does on Windows; given one, it returned the query result from the open model.
+The November 24 integration adds four checks for restarting an exact-name scan
+with a different mask. The runner now requires 79 checks; the 75-check result
+above predates this regression case.
+
+### Fedora 44 integration check: November 24, 2026
+
+The extended probe ran without a compositor in its own disposable prefixes.
+No Desktop session or production prefix was used.
+
+| Runtime / control | Checks passed | Checks failed |
+|---|---|---|
+| Published 0.1.6-beta.1, extended probe | 15 | 30 |
+| Local 0.1.7-pr-integration.1, corrected restart mask | 79 | 0 |
+| Same candidate with only the server's old mask condition restored | 78 | 1 |
+
+The published runtime cannot enumerate the directory, so checks conditional on
+a successful listing are not reached. Its smaller total is not missing coverage
+counted as success. The server control failed exactly at `restart must keep the
+original exact mask`; it used the same candidate client and probe. The candidate
+runtime payload was unchanged by that control, and its source/build provenance
+was verified after restoring the source. All test prefixes stopped and were
+removed.
+
+The local candidate archive SHA-256 is
+`0128b0f2bb2d4ab098767f96f9492223015df6f57d28d954170e0e031a5ae482`.
+This is headless pipe/API validation, not Desktop integration or graphical
+release certification.
+
+With a runtime carrying the patch (built from a tree that also carries the
+Arch and Hyprland changes) and a test report open in Desktop 2.159.1231.0,
+`pbir desktop list` named the report and its pages, `pbir desktop refresh`
+reloaded a visual title changed on disk and `pbir desktop screenshot` saved
+the page. `pbir model -q` loads an ADOMD.NET client, as it does on Windows;
+given one, it returned the query result from the open model.
 
 Limits:
 

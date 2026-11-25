@@ -1,12 +1,10 @@
 # Build from a clean source tree
 
-The current recipe defaults to runtime **0.1.6-beta.1** (`--runtime-version 0.1.6-beta.1`), with
-the Power BI 2.159.1231.0 installer pin and the existing reviewed Wine/DXVK patches.
-The tree additionally holds four Wine corrections found on Hyprland that no
-published runtime contains yet; see [Hyprland](../reference/hyprland.md).
-A complete local build and successful-build receipt were produced on October 20.
-The 2.159 port passed offline and preliminary native checks; exact-archive release
-acceptance is tracked separately. See [the current assessment](../reference/powerbi-2.159.md).
+The current recipe defaults to runtime **0.1.7-pr-integration.1** (`--runtime-version 0.1.7-pr-integration.1`), with
+the Power BI 2.160.1151.0 installer pin and the existing reviewed Wine/DXVK patches.
+The complete corresponding sources for the published archive retain its exact
+original build inputs. CLI revision 20 selects the newer Desktop recipe and WinRT
+shim independently. See [the current assessment](../reference/powerbi-2.160.md).
 
 The historical **0.1.4** source recipe includes the modal/popup, signed-Int64 HTML, cursor and normal Wayland resize corrections.
 The latest full 0.1.4 recipe has not yet been built; the private PaperWM candidate
@@ -117,7 +115,7 @@ python3 tools/build-deb.py --local
 python3 tools/build-deb.py --stage-only /path/to/new-staging-directory
 ```
 
-Outputs are `build/deb/powerbi-linux_0.1.0-19~experimental1_amd64.deb` and its
+Outputs are `build/deb/powerbi-linux_0.1.0-20~experimental1_amd64.deb` and its
 `.deb.sha256`. Existing artifacts are not overwritten: change the version in
 `packaging/debian/control` or use a fresh `--output` directory. The builder does
 not claim byte-identical reproducibility. It runs no tests implicitly; run the

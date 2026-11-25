@@ -1,5 +1,5 @@
 Package: powerbi-linux
-Version: 0.1.0-19~experimental1
+Version: 0.1.0-20~experimental1
 Section: utils
 Priority: optional
 Architecture: amd64
