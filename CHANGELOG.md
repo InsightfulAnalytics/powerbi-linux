@@ -4,6 +4,21 @@
 
 ### Unreleased — product repository and upstream review
 
+- Add five Wine corrections found on Hyprland, each with a regression check.
+  The UI thread no longer stays asleep after a slow cursor lookup, which froze
+  Desktop after a visual resize
+  ([cursors](docs/reference/cursor.md#desktop-frozen-after-a-cursor-change-2026-11-18)).
+  Legacy dialogs no longer open two pixels wide on a compositor that reports
+  them maximized
+  ([legacy HTML](docs/reference/legacy-html.md#dialogs-two-pixels-wide-on-hyprland-2026-11-18)).
+  Desktop stays tiled and maximized across compositor configures, and keeps its
+  size after a workspace switch
+  ([Hyprland](docs/reference/hyprland.md#later-corrections-2026-11-18)). The
+  frame receiver keeps delivering frames while a modal dialog disables the main
+  window, so the report no longer goes blank behind Options
+  ([modal dialog frames](docs/reference/modal-dialog-frames.md)). They need a
+  rebuilt runtime.
+
 - Release RPM `0.1.0-20`, experimental DEB `0.1.0-20~experimental1` and Arch
   revision 20 with community PRs #5–#8 and the 2.160 installer port. Automatic setup
   pins the published, verified 0.1.7-pr-integration.1 runtime containing the Wine
