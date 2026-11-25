@@ -125,6 +125,26 @@ struct consumer_slot
     ULONGLONG diagnosed;
 };
 
+/* WindowFromPoint stops at a disabled window and never looks at its children:
+ * Desktop's main window is disabled while a modal dialog is open, and its
+ * browser hosts would then count as covered. Descend to the deepest visible
+ * child at the point, as WindowFromPoint does for an enabled window. */
+static HWND deepest_window_from_point(POINT point)
+{
+    HWND window = WindowFromPoint(point), child;
+    POINT client;
+    int depth;
+    for (depth = 0; window && depth < 24; ++depth)
+    {
+        client = point;
+        if (!ScreenToClient(window, &client)) break;
+        child = ChildWindowFromPointEx(window, client, CWP_SKIPINVISIBLE);
+        if (!child || child == window) break;
+        window = child;
+    }
+    return window;
+}
+
 /* WS_VISIBLE is also set on WebView2's preloaded proxy windows. Confirm that
  * this host is actually exposed in the Win32 window tree. Sampling its client
  * area handles partial coverage by a popup without painting hidden siblings. */
@@ -142,7 +162,7 @@ static BOOL host_exposed(HWND host)
         point.x = (2*x+1)*rect.right/6;
         point.y = (2*y+1)*rect.bottom/6;
         ClientToScreen(host, &point);
-        for (window = WindowFromPoint(point), depth = 0; window && depth < 24;
+        for (window = deepest_window_from_point(point), depth = 0; window && depth < 24;
              window = GetAncestor(window, GA_PARENT), ++depth)
         {
             GetWindowThreadProcessId(window, &pid);

@@ -1,7 +1,7 @@
 {
   "dxvk-3.1-composition.patch": "33c3da7be9d3d95a3fe7ee08670962f1a56cc9e3ddb08518dfdc7819128b39ee",
   "wine-11.18-cgroup-memory.patch": "7ad77dd0040446700fe8daaba4103e2dfa04e11685bd0820cd1e5c08a4cc54a2",
-  "wine-11.18-composition.patch": "c37ea6fa335257489eed3cb311aa445d8281e7c3138adfabff95ad8cc626b42c",
+  "wine-11.18-composition.patch": "050231d3b4bc4bc8923922be501f2901dbc082a4296f5666ba7929f0a755125d",
   "wine-11.18-cursor-resource.patch": "db38c2d9ad6ec2e3c313bcc0a35e9d764896473419b80c507bfcd4c5ba0e0546",
   "wine-11.18-jscript-int64.patch": "baa1e7247957c9c7fa0b740066f11b971edae2329a8b667d357dc49935e524f7",
   "wine-11.18-oleaut32-max-date.patch": "293cbc1b75f45a89b897c8c47d4f798b7c55820e28223faece30155e52e6c337",
