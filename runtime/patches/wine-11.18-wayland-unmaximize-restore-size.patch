@@ -24,7 +24,10 @@ before xdg_toplevel.set_maximized, on the event thread's queue, so its
 answer is handled in order with the configures; each configure records
 whether the sync was still unanswered when it arrived. A reader prepared on
 an empty queue holds off every socket read while the listener is set, as
-libwayland drops an event that has none.
+libwayland drops an event that has none. The initial configure is restored
+even then: the compositor maps the window from it, and with the maximized
+rectangle Hyprland floated the window in 4 of 10 starts (12 of 12 tiled
+with this exception).
 Applies after wine-11.18-wayland-fixed-dialog-maximized.patch and
 wine-11.18-wayland-keep-toplevel-state.patch; without the latter a configure
 sequence without a toplevel event would be read as such a request. Wine
@@ -53,18 +56,21 @@ Wine-derived change: LGPL-2.1-or-later.
  
      /* Read the window before taking the window data lock: win32u calls the
       * driver with its own lock held, so the order must not be reversed. */
-@@ -666,6 +670,10 @@
+@@ -666,6 +670,13 @@
      rect = map_rect_from_surface(surface, rect);
      OffsetRect(&rect, data->rects.window.left, data->rects.window.top);
  
 +    /* The compositor sent this configure before it saw the window's last
-+     * request to be maximized; its answer follows. */
-+    maximize_requested = surface->processing.before_maximize;
++     * request to be maximized; its answer follows. Not for the initial
++     * configure: the compositor decides how to map the window from the size
++     * it gets now, and a window left at its maximized rectangle is mapped as
++     * a floating window of a fixed size. */
++    maximize_requested = surface->processing.before_maximize && surface->current.serial;
 +
      wayland_win_data_release(data);
  
      TRACE("processing=%dx%d,%#x\n", width, height, state);
-@@ -677,6 +685,25 @@
+@@ -677,6 +688,25 @@
      if (rect.left == rect.right || rect.bottom == rect.top) flags |= SWP_NOSIZE;
  
      style = NtUserGetWindowLongW(hwnd, GWL_STYLE);
@@ -90,7 +96,7 @@ Wine-derived change: LGPL-2.1-or-later.
      if (!(state & WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED) != !(style & WS_MAXIMIZE)
          && !(state & WAYLAND_SURFACE_CONFIG_STATE_FULLSCREEN))
          NtUserSetWindowLong(hwnd, GWL_STYLE, style ^ WS_MAXIMIZE, FALSE);
-@@ -692,7 +719,13 @@
+@@ -692,7 +722,13 @@
          flags |= SWP_NOSENDCHANGING;
      }
  
