@@ -151,6 +151,17 @@ def runtime_order(version):
                             for part in match.group(4).split('.')))
 
 
+def locally_built(version):
+    """True for a runtime label from a local build (0.1.7-local.12).
+
+    Precedence alone cannot protect one: 'local' sorts below a published
+    pre-release such as 'pr-integration', and a later release need not carry
+    the local build's patches either.
+    """
+    match = re.fullmatch(r'[^-+]+-([0-9A-Za-z.-]+)(?:\+.*)?', version or '')
+    return bool(match) and 'local' in match.group(1).split('.')
+
+
 def keep_installed_runtime(paths, item):
     """Refuse to replace a newer or locally built runtime with the published one unasked."""
     if not paths.active.is_file():
@@ -163,7 +174,7 @@ def keep_installed_runtime(paths, item):
     except Error:
         version = None
     current, offered = runtime_order(version), runtime_order(item['version'])
-    if current is not None and offered is not None and current < offered:
+    if current is not None and offered is not None and current < offered and not locally_built(version):
         return
     raise Error('The installed runtime (' + (version or 'unknown version') + ') is not an older release than '
                 'the published runtime ' + item['version'] + ': it is newer or was built locally, and the '

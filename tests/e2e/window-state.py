@@ -5,7 +5,8 @@
 Hyprland only: the test reads and moves its own windows with hyprctl. It opens
 small test windows on the focused workspace for a few seconds (--workspace
 moves them to another visible workspace once they are mapped) and needs no
-Desktop session.
+Desktop session. The second case needs a workspace with no other tiled window,
+and a hidden workspace on the same monitor.
 
 1. A window that starts maximized while a floating window holds the focus must
    be mapped as a tile, not as a floating window of the size of the monitor.
@@ -24,7 +25,7 @@ import time
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'src'))
-from pbi_linux.common import Paths, Error
+from pbi_linux.common import Paths, Error, wine_env
 from pbi_linux.provision import active
 
 TITLE='pbi-window-state-probe'
@@ -67,16 +68,16 @@ class Probe:
         for line in self.process.stdout:
             if line.startswith('STATE '):
                 self.states.append(line.split())
-    def appear(self,seconds=30):
+    def appear(self,seconds=30,title=TITLE,condition=lambda found:True):
         deadline=time.monotonic()+seconds
         while time.monotonic()<deadline:
-            found=window()
-            if found:
+            found=window(title)
+            if found and condition(found):
                 return found
             if self.process.poll() is not None:
                 break
             time.sleep(.1)
-        raise Error('The test window did not appear')
+        raise Error('The %s window did not appear' % title)
     def state(self):
         if not self.states:
             raise Error('The probe reported no window state')
@@ -114,12 +115,22 @@ def main():
         raise Error('A window titled %r is already open' % TITLE)
     installed=active(Paths())
     wine=Path(installed['runtime'])/'bin/wine'
-    env=dict(os.environ,WINEPREFIX=str(installed['prefix']),WINEDEBUG='-all')
+    # The installation's own Wine: a shell's WINESERVER or WINELOADER is dropped.
+    env=dict(wine_env(installed['prefix']),WINEDEBUG='-all')
     failures=[]
 
     probe=Probe(wine,exe,env,['maximized','12','after-fixed'])
     try:
+        # The case only means something if the fixed dialog floats and holds the
+        # focus when the maximized window asks for its place.
+        try:
+            probe.appear(title=HELPER,
+                                condition=lambda found:found['floating'] and found.get('focusHistoryID')==0)
+        except Error:
+            raise Error('setup: the fixed helper window did not float with the focus: %s' % window(HELPER))
         first=probe.appear()
+        if window(HELPER) is None:
+            raise Error('setup: the fixed helper window closed before the test window mapped')
         if a.workspace:
             for found in (first,window(HELPER)):
                 if found:
@@ -127,10 +138,16 @@ def main():
         time.sleep(3)
         later=window() or first
         text='floating=%s size=%s, then floating=%s size=%s' % (first['floating'],first['size'],later['floating'],later['size'])
+        try:
+            reported=probe.settle()
+        except Error as exc:
+            reported=None
+            failures.append('maximized start lost its maximized style: %s' % exc)
         if first['floating'] or later['floating']:
             failures.append('maximized start mapped floating: '+text)
-        else:
-            print('PASS: maximized start beside a focused floating window is tiled:',text)
+        elif reported:
+            print('PASS: maximized start beside a focused floating window is tiled:',
+                  text+', probe %s %s' % reported)
     finally:
         probe.close()
 
@@ -140,11 +157,23 @@ def main():
         home=a.workspace or found['workspace']['id']
         if a.workspace:
             move(found['address'],a.workspace)
+            found=next((c for c in clients() if c['address']==found['address']),found)
+        # Alone on the hidden workspace, the window gets that workspace's whole
+        # area: the sizes compare only if it was alone at home too.
+        others=[c for c in clients() if str(c['workspace']['id'])==str(home)
+                and c['address']!=found['address'] and not c['floating']]
+        if others:
+            raise Error('workspace %s holds %d other tiled window(s): pass --workspace with an empty one'
+                        % (home,len(others)))
         before=probe.settle()
         try:
             move(found['address'],a.hidden_workspace)
             time.sleep(2)
             hidden=probe.state()
+            moved=next((c for c in clients() if c['address']==found['address']),None)
+            if moved and moved['monitor']!=found['monitor']:
+                raise Error('workspace %s is on another monitor, so the tile size differs: '
+                            'bind it to monitor %s with a workspace rule' % (a.hidden_workspace,found['monitor']))
         finally:
             move(found['address'],home)
         time.sleep(2)

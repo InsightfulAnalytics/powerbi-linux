@@ -226,10 +226,12 @@ body before the dialog is shown. It takes 55 of the 110 bytes of padding the
 source list step left in `komanagedatasourcesdialog.js`; PE and resource sizes
 and IL stay unchanged.
 
-The step is applied to **2.159.1231.0 only**. The recipe verifies the hash of
-the complete assembly, and the other supported builds were not available to
-compute one. They keep the output of the Options step. `pbi-linux doctor`
-reports the installed assembly as outdated until `pbi-linux repair` has run.
+The step is applied to **2.159.1231.0 and 2.160.1151.0**. The recipe verifies
+the hash of the complete assembly, and 2.158.1177.0 and 2.159.883.0 were not
+available to compute one; they keep the output of the Options step. In
+2.160.1151.0 the source list resource is byte-identical, 704 bytes earlier, like
+the other shifted resources. `pbi-linux doctor` reports the installed assembly
+as outdated until `pbi-linux repair` has run.
 
 ### Evidence
 
@@ -238,7 +240,9 @@ reports the installed assembly as outdated until `pbi-linux repair` has run.
 | Body client area | 783 x 436, both bars | No bars |
 | Dialog window | 802 x 587 | 802 x 592 |
 | Sort button | Partly covered | Whole |
-| Recipe output | `3b0639cf...` | `426f5e88...`, same length, only the source list resource differs |
+| Recipe output, 2.159.1231.0 | `3b0639cf...` | `426f5e88...`, same length, only the source list resource differs |
+| Recipe output, 2.160.1151.0 | Options step output | `c7d7c812...`, same length, only the source list resource differs |
+| Dialog window, 2.160.1151.0, Hyprland headless output | Not measured | 802 x 592, not maximized |
 
 Screenshots of both views of the dialog (Global permissions and Data sources
 in current file, with four and five buttons in the bottom row) were reviewed:
@@ -250,6 +254,9 @@ Limits:
 
 - One host. The step does not depend on the compositor, but only this one was
   used.
+- On 2.160.1151.0 the dialog's size was checked, not its pixels: screen
+  captures of the headless output came back black on that run. The changed
+  resource is byte-identical to the one reviewed on 2.159.1231.0.
 - The warning row for unknown data sources was not shown in the test. With
   the body no longer scrolling, content taller than 590 pixels would be cut
   off instead; nothing in this dialog comes near that height.
@@ -292,7 +299,7 @@ the description and the radio group's name, label and state. It is a
 size-preserving change to the embedded script, guarded by the original and
 patched resource hashes (`a86f3f8f...`, `511d75f7...`); the indentation below
 the module marker and the source map comment make room for it. It is applied to
-**2.159.1231.0 only**, the one build whose assembly was available.
+**2.159.1231.0 and 2.160.1151.0**; the resource is byte-identical in both.
 `pbi-linux doctor` reports it as `auto-recovery-dialog`; `pbi-linux repair`
 applies it.
 
@@ -307,11 +314,12 @@ and OK clicked with posted mouse messages:
 | OK, "Yes, I want to view the files later" | Dialog stays open | Desktop exited 2 s later; the recovered file was kept |
 | Close with no recovered file | Not tested | No dialog; Desktop exited 7 s later |
 | `tools/test-powerbi-recipe.py --version 2.159.1231.0` | Not run | Passed, same length |
+| 2.160.1151.0, QA installation, Hyprland headless output, OK with the default choice | Dialog still open 60 s later; the recovered file was kept | Desktop exited 3 s later; the recovered file was removed |
+| `tools/test-powerbi-recipe.py --version 2.160.1151.0` | | Passed, same length |
 
 Limits:
 
-- One host and one Desktop build. 2.158.1177.0 and 2.159.883.0 keep the
-  original script.
+- One host. 2.158.1177.0 and 2.159.883.0 keep the original script.
 - Other floating dialogs whose view model has no `getJSON` failed the same
   way on OK. The survey that followed and the shared correction are in the
   next section.
@@ -359,8 +367,8 @@ Each resource is found by a unique marker and its .NET length prefix, guarded
 by its original and patched hashes, and changed in place: leading indentation
 (and, in the drop-down form, three comments and the source map comment) make
 room for the walker. The complete assembly hash is recorded per build. It is
-applied to **2.159.1231.0 only**; `pbi-linux doctor` reports it as
-`dialog-serializers`.
+applied to **2.159.1231.0 and 2.160.1151.0**, whose two scripts are
+byte-identical; `pbi-linux doctor` reports it as `dialog-serializers`.
 
 ### Evidence
 
@@ -369,11 +377,14 @@ applied to **2.159.1231.0 only**; `pbi-linux doctor` reports it as
 | File > Export > Power BI template, OK (Hyprland, QA installation) | Dialog stayed open after two clicks; Cancel closed it | Dialog closed and the Save dialog opened |
 | Walker against Desktop's own knockout and dialog scripts (Node, host simulated as a COM-like object that throws when read) | Original throws at `performance.mark` | Output equals `ko.toJSON` with host objects left out on 3000 random object graphs; the host is never read |
 | `tools/test-powerbi-recipe.py --version 2.159.1231.0` | | Passed, same length |
+| 2.160.1151.0: File > Export > Power BI template, OK (Hyprland headless output, QA installation) | Dialog stayed open | Dialog closed and the Save dialog opened |
+| 2.160.1151.0: Options, OK with no changes | Dialog stayed open | Dialog closed |
+| `tools/test-powerbi-recipe.py --version 2.160.1151.0` | | Passed, same length |
 
 Limits:
 
-- One host and one Desktop build. Node is not Wine's JScript: the JScript
+- One host. Node is not Wine's JScript: the JScript
   behaviour relied on (`instanceof` and `typeof` on a COM object) comes from
-  the Wine 11.18 source, and the Export template run above.
+  the Wine 11.18 source, and the Export template and Options runs above.
 - Dialogs whose page wires its own OK (Analysis Services live connection
   properties, the Report Server dialogs) were not resolved.

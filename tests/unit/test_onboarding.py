@@ -292,7 +292,10 @@ class GuidedSetupTests(unittest.TestCase):
     def test_update_does_not_replace_a_newer_or_local_runtime_unasked(self):
         # The published runtime here is 1.0.0. A local build can carry corrections
         # the published one lacks, and a default local build even reuses its label.
-        for version in ('1.0.1-local.1', '1.0.0', '1.1.0-beta.1', 'custom', None):
+        # 'local' also sorts below published pre-releases (0.1.7-local.12 < 0.1.7-pr-integration.1),
+        # so a local build is kept whatever its label's precedence.
+        for version in ('1.0.1-local.1', '1.0.0', '1.1.0-beta.1', 'custom', None,
+                        '1.0.0-local.12', '0.9.9-local.1', '0.9.9-rc.1.local.2+build.1'):
             self.install(version, 'b' * 64)
             with patch.object(onboarding.assets, 'download') as download:
                 with self.assertRaisesRegex(common.Error, '--published'):
@@ -322,6 +325,12 @@ class GuidedSetupTests(unittest.TestCase):
         self.assertEqual(onboarding.runtime_order('0.1.6+build.3'), onboarding.runtime_order('0.1.6'))
         for label in ('', None, 'latest', '1.0', '1.0.0.0'):
             self.assertIsNone(onboarding.runtime_order(label))
+
+    def test_local_runtime_labels_are_recognised(self):
+        for label in ('0.1.7-local.12', '0.1.7-local', '0.1.7-rc.1.local.2+build.1'):
+            self.assertTrue(onboarding.locally_built(label), label)
+        for label in ('0.1.7', '0.1.7-pr-integration.1', '0.1.7-locale.1', '0.1.7+local', '', None, 'local'):
+            self.assertFalse(onboarding.locally_built(label), label)
 
     def test_replaced_microsoft_installer_is_explained(self):
         # Microsoft serves each new Desktop build from the same address.

@@ -34,15 +34,34 @@ ORIGINALS_2160 = {
     'msmdsrv.exe': '81b10be9ef3245c9f39647b75c92315007bf59726dbab74f7d49f309392a97bf',
     'Microsoft.Mashup.Client.UI.dll': legacy_html.UI_2160_ORIGINAL_SHA256,
 }
+# The exact PBIDesktop.exe.config each build installs. 2.158.1177.0 and
+# 2.159.883.0 can no longer be downloaded to check theirs, so their
+# configuration stays as installed and launch names the manager instead.
+CONFIG_ORIGINALS = {
+    '2.159.1231.0': '1e6ddfd4196e6b8b6accef7fb2d0c21a7bf53daf1199d17059c3856291c60109',
+    '2.160.1151.0': 'd9933f4a2e187e24f6bdad1a99aba54220723c759c0bb458fdf7940577251d3a',
+}
 RECIPES = {'2.158.1177.0': ORIGINALS, '2.159.883.0': CURRENT_ORIGINALS,
            '2.159.1231.0': ORIGINALS_2159_1231, '2.160.1151.0': ORIGINALS_2160}
+# Builds whose assemblies were available to verify the shared dialog
+# serializers, the Options show call and the Auto recovery dialog against.
+DIALOG_RECIPES = ('2.159.1231.0', '2.160.1151.0')
 
 
 def ui_patched_hash(version):
     """The complete Microsoft.Mashup.Client.UI.dll that setup and repair write."""
-    if version == '2.159.1231.0':
-        return options_show.UI_2159_1231_PATCHED_SHA256
+    if version in DIALOG_RECIPES:
+        return options_show.UI_PATCHED_SHA256[version]
     return legacy_html.patched_hash(version)
+
+
+def config_original(originals):
+    """The verified original PBIDesktop.exe.config checksum for a recipe, or None."""
+    if originals is ORIGINALS_2160:
+        return CONFIG_ORIGINALS['2.160.1151.0']
+    if originals is ORIGINALS_2159_1231:
+        return CONFIG_ORIGINALS['2.159.1231.0']
+    return None
 
 
 def originals_for(desktop_sha256):
@@ -220,8 +239,8 @@ def install(prefix, runtime, log):
     if not ui_source.exists():
         ui_source = bin_dir / ui_name
     patched_ui = legacy_html.patch_ui(ui_source.read_bytes())
-    if originals is ORIGINALS_2159_1231:
-        # Verified on 2.159.1231.0 only, like the Auto recovery dialog below.
+    dialogs = any(originals is recipe for recipe in (ORIGINALS_2159_1231, ORIGINALS_2160))
+    if dialogs:
         patched_ui = options_show.patch_ui(dialog_serializers.patch_ui(patched_ui))
     windows_name = 'Microsoft.PowerBI.Client.Windows.dll'
     windows_source = backups / windows_name
@@ -231,9 +250,9 @@ def install(prefix, runtime, log):
     patched_windows = (signin.patch_windows(windows_source.read_bytes())
                        if originals is ORIGINALS else
                        signin.patch_windows(windows_source.read_bytes(), originals[windows_name]))
-    if originals is ORIGINALS_2159_1231:
-        # Verified on 2.159.1231.0 only: the other builds' assemblies are not
-        # available to check the resource against, so they stay as they were.
+    if dialogs:
+        # The other builds' assemblies were not available to check the
+        # resource against, so they stay as they were.
         patched_windows = autorecovery.patch_windows(patched_windows)
     picker_name = text_pickers.DOCUMENT
     picker_source = backups / picker_name
@@ -243,8 +262,15 @@ def install(prefix, runtime, log):
     config_source = backups / DESKTOP_CONFIG
     if not config_source.exists():
         config_source = bin_dir / DESKTOP_CONFIG
-    patched_config = patch_config(config_source.read_bytes())
-    for name in (*originals, picker_name, DESKTOP_CONFIG):
+    config_hash = config_original(originals)
+    if config_hash:
+        check_digest(config_source, config_hash)
+        patched_config = patch_config(config_source.read_bytes())
+    else:
+        # Unverified build: the original configuration, as an earlier repair may
+        # have changed it before the checksum was required.
+        patched_config = config_source.read_bytes() if config_source.parent == backups else None
+    for name in (*originals, picker_name, *((DESKTOP_CONFIG,) if config_hash else ())):
         backup = backups / name
         if not backup.exists():
             _backup(bin_dir / name, backup)
@@ -321,12 +347,14 @@ def install(prefix, runtime, log):
         out = bin_dir / (picker_name + '.new')
         out.write_bytes(patched_picker)
         os.replace(out, bin_dir / picker_name)
-        out = bin_dir / (DESKTOP_CONFIG + '.new')
-        out.write_bytes(patched_config)
-        os.replace(out, bin_dir / DESKTOP_CONFIG)
+        if patched_config is not None:
+            out = bin_dir / (DESKTOP_CONFIG + '.new')
+            out.write_bytes(patched_config)
+            os.replace(out, bin_dir / DESKTOP_CONFIG)
     finally:
         key.unlink(missing_ok=True)
         windows_input.unlink(missing_ok=True)
+    # Only a configuration that names the manager is recorded: launch names it otherwise.
     return {name: digest(bin_dir/name) for name in (*originals, 'WinRTStubs.dll',
                                                    'PowerBIDiagnostics.dll', 'PowerBICompositionManager.dll', NATIVE_DIALOG, CACHE_COMPAT, WINDOW_FRAME, picker_name,
-                                                   DESKTOP_CONFIG)}
+                                                   *((DESKTOP_CONFIG,) if config_hash else ()))}

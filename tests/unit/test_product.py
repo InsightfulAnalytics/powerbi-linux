@@ -156,7 +156,7 @@ class ProductTests(unittest.TestCase):
         actual=Path(__file__).resolve().parents[2]
         for name in ('src','runtime','connectors','tests','packaging','tools','docs','.github','LICENSES'):
             (project/name).mkdir(parents=True)
-        for name in ('LICENSE','README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore'):
+        for name in ('LICENSE','README.md','CONTRIBUTING.md','SECURITY.md','SECURITY-RULES.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore'):
             (project/name).write_text('public')
         for name in ('export-source.py','source_tree.py'):
             shutil.copy2(actual/'tools'/name,project/'tools'/name)
@@ -223,11 +223,14 @@ class ProductTests(unittest.TestCase):
         return archive
 
     def test_archive_rejects_traversal(self):
-        for index, name in enumerate(('../escape','/tmp/escape')):
+        # '../escape' extracted into root/extract0 would land at root/escape.
+        absolute = self.root/'absolute-escape'
+        for index, name in enumerate(('../escape', str(absolute))):
             archive = self.tar_entry(name)
             with self.assertRaises(common.Error):
                 assets.extract_runtime(archive,self.root/('extract'+str(index)))
-        self.assertFalse((self.root.parent/'escape').exists())
+        self.assertFalse((self.root/'escape').exists())
+        self.assertFalse(absolute.exists())
 
     def test_archive_rejects_symlink_escape(self):
         archive = self.tar_entry('link', link='../../outside')

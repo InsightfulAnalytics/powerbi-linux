@@ -85,9 +85,11 @@ class AutoRecoveryTests(unittest.TestCase):
             self.assertEqual(list((prefix / 'powerbi-linux-originals').iterdir()), [])
             return str(raised.exception)
 
-    def test_2159_1231_setup_rejects_an_unknown_dialog_before_replacing_files(self):
-        message = self.install_until_failure('ORIGINALS_2159_1231')
-        self.assertIn('Unsupported Auto recovery dialog resource', message)
+    def test_verified_builds_reject_an_unknown_dialog_before_replacing_files(self):
+        for recipe_name in ('ORIGINALS_2159_1231', 'ORIGINALS_2160'):
+            with self.subTest(recipe=recipe_name):
+                message = self.install_until_failure(recipe_name)
+                self.assertIn('Unsupported Auto recovery dialog resource', message)
 
     def test_other_builds_leave_the_dialog_alone(self):
         for recipe_name in ('ORIGINALS', 'CURRENT_ORIGINALS'):

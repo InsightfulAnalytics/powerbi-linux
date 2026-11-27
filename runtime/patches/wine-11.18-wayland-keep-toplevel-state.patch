@@ -17,7 +17,13 @@ at the wrong size.
 Note whether a toplevel event arrived in the sequence. Without one, only the
 serial is new: hand it to a configure that is still to be acknowledged, or
 acknowledge it at once. The last size is deliberately not applied again; a
-window that has resized itself since would be put back.
+window that has resized itself since would be put back. A configure still
+being processed that the window cannot satisfy stays unacknowledged until
+the next toplevel configure, as it did before such a sequence arrived; before
+this change that sequence acknowledged it only by leaving the maximized
+state. The immediate acknowledgement commits from the event thread with the
+window data lock held, the lock under which every attach and commit of the
+toplevel surface happens, so it cannot commit half-prepared state.
 Applies after wine-11.18-wayland-parent.patch. Wine master had the same code
 on 2026-11-18.
 Wine-derived change: LGPL-2.1-or-later.

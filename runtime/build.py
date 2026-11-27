@@ -31,7 +31,9 @@ WINE_PATCHES = ('wine-11.18-composition.patch','wine-11.18-oledb32-variant.patch
                 'wine-11.18-wayland-unmaximize-restore-size.patch',
                 'wine-11.18-oleaut32-format-scaling.patch',
                 'wine-11.18-oledb32-variant-currency.patch',
-                'wine-11.18-dwrite-symbol-fallback.patch')
+                'wine-11.18-dwrite-symbol-fallback.patch',
+                'wine-11.18-oleaut32-decimal-round.patch',
+                'wine-11.18-wayland-no-layout-hkl.patch')
 
 
 def preparation_matches(marker, expected):

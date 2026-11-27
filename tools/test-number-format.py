@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Check DAX FORMAT scaling commas and currency conversion in the installed runtime."""
+"""Check DAX FORMAT scaling commas, decimal rounding and currency conversion in the installed runtime."""
 import datetime
 import json
 from pathlib import Path
@@ -22,7 +22,7 @@ def main():
     exe = output / 'NumberFormatProbe.exe'
     env = wine_env(installed['prefix'])
     result = {'passed': False, 'runtime': runtime.name,
-              'scope': 'oleaut32 VarFormat scaling commas, oledb32 VARIANT to currency'}
+              'scope': 'oleaut32 VarFormat scaling commas and VarDecRound, oledb32 VARIANT to currency'}
     try:
         for label, args in [
             ('compile', [r'C:\windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe',
@@ -41,7 +41,7 @@ def main():
         result['passed'] = True
     finally:
         (output / 'result.json').write_text(json.dumps(result, indent=2) + '\n')
-    print('PASS: number formats and currency conversion. Evidence:', output)
+    print('PASS: number formats, decimal rounding and currency conversion. Evidence:', output)
 
 
 if __name__ == '__main__':

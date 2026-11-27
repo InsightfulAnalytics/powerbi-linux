@@ -25,7 +25,7 @@ import urllib.request
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'src'))
-from pbi_linux.common import Paths, Error
+from pbi_linux.common import Paths, Error, wine_env
 from pbi_linux.provision import active
 
 TRIGGER='''(() => { window.chrome.webview.postMessage({objectId: "BrowserInternalContext", method: "OnError",
@@ -50,7 +50,8 @@ def main():
     from websocket import create_connection
     installed=active(Paths())
     prefix,runtime=Path(installed['prefix']),Path(installed['runtime'])
-    env=dict(os.environ,WINEPREFIX=str(prefix),WINEDEBUG='-all')
+    # The installation's own Wine: a shell's WINESERVER or WINELOADER is dropped.
+    env=dict(wine_env(prefix),WINEDEBUG='-all')
     def page():
         for file in (prefix/'drive_c/users').glob('*/AppData/Local/Microsoft/Power BI Desktop/**/DevToolsActivePort'):
             try:

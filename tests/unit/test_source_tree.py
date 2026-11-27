@@ -71,21 +71,31 @@ class SourceTree(unittest.TestCase):
                 source_tree.refuse_symlinks(('docs',))
 
     def test_rpm_source_archive_omits_excluded_entries(self):
-        # The same member filter as tools/build-rpm.py, on a synthetic tree.
+        # The member filter tools/build-rpm.py uses, on a synthetic tree.
+        self.assertIn('filter=member', (ROOT / 'tools/build-rpm.py').read_text())
+        self.assertIn('member=archive_filter(TOP)', (ROOT / 'tools/build-rpm.py').read_text())
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             (root / 'packaging/arch/pkg').mkdir(parents=True)
             (root / 'packaging/arch/pkg/file').write_text('x')
             (root / 'packaging/arch/PKGBUILD').write_text('x')
+            (root / 'packaging/arch/PKGBUILD').chmod(0o777)
+            (root / 'packaging/run').write_text('x')
+            (root / 'packaging/run').chmod(0o777)
             (root / 'packaging/arch/powerbi-linux-0.1.0-19-x86_64.pkg.tar.zst').write_text('x')
             (root / 'packaging/__pycache__').mkdir()
             with mock.patch.object(source_tree, 'MAKEPKG', root / 'packaging/arch'):
                 with tarfile.open(root / 'out.tar', 'w') as tar:
-                    tar.add(root / 'packaging', arcname='top/packaging', filter=lambda info: None
-                            if source_tree.excluded(root / Path(info.name).relative_to('top')) else info)
+                    tar.add(root / 'packaging', arcname='top/packaging',
+                            filter=source_tree.archive_filter('top', root))
             with tarfile.open(root / 'out.tar') as tar:
-                self.assertEqual(sorted(tar.getnames()),
-                                 ['top/packaging', 'top/packaging/arch', 'top/packaging/arch/PKGBUILD'])
+                modes = {info.name: info.mode for info in tar.getmembers()}
+            self.assertEqual(sorted(modes), ['top/packaging', 'top/packaging/arch',
+                                             'top/packaging/arch/PKGBUILD', 'top/packaging/run'])
+            self.assertEqual(modes['top/packaging/arch'], 0o755)
+            self.assertEqual(modes['top/packaging/run'], 0o755)
+            # 0777 from a permissive mount: executable stays 0755, never world-writable.
+            self.assertEqual(modes['top/packaging/arch/PKGBUILD'], 0o755)
 
 
 if __name__ == '__main__':

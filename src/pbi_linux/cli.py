@@ -95,14 +95,18 @@ def doctor(paths):
                     'Custom client frame and transparent resize zones are present' if frame_patched else
                     'Window frame correction is missing; close Desktop and run repair')
                 manager_configured = patches.DESKTOP_CONFIG in installed['patches']
-                add('desktop-instances', manager_configured,
-                    'A Desktop started by Desktop loads the compatibility manager' if manager_configured else
-                    'A Desktop started by Desktop (another report, a restart) crashes; close Desktop and run repair')
+                if components['powerbi'] in patches.CONFIG_ORIGINALS:
+                    add('desktop-instances', manager_configured,
+                        'A Desktop started by Desktop loads the compatibility manager' if manager_configured else
+                        'A Desktop started by Desktop (another report, a restart) crashes; close Desktop and run repair')
+                elif manager_configured:
+                    add('desktop-instances', False, 'PBIDesktop.exe.config of ' + components['powerbi'] +
+                        ' was changed without a verified original; close Desktop and run repair')
             except (Error, OSError, ValueError) as exc:
                 add('desktop-patches', False, str(exc))
-            if components['powerbi'] == '2.159.1231.0':
+            if components['powerbi'] in patches.DIALOG_RECIPES:
+                ui = Path(installed['prefix']) / provision.BIN / 'Microsoft.Mashup.Client.UI.dll'
                 try:
-                    ui = Path(installed['prefix']) / provision.BIN / 'Microsoft.Mashup.Client.UI.dll'
                     serializers = dialog_serializers.patched(ui.read_bytes())
                     add('dialog-serializers', serializers,
                         'Legacy dialogs serialize their view model without the .NET host' if serializers else

@@ -77,7 +77,12 @@ class OptionsShowTests(unittest.TestCase):
             with self.assertRaisesRegex(common.Error, 'Unexpected Options dialog patch output'):
                 options_show.patch_ui(assembly(body))
 
-    def test_2159_1231_setup_applies_it_after_the_serializers(self):
+    def test_verified_builds_apply_it_after_the_serializers(self):
+        for recipe_name in ('ORIGINALS_2159_1231', 'ORIGINALS_2160'):
+            with self.subTest(recipe=recipe_name):
+                self.check_order(recipe_name)
+
+    def check_order(self, recipe_name):
         order = []
         with tempfile.TemporaryDirectory() as directory:
             prefix = Path(directory)
@@ -93,7 +98,7 @@ class OptionsShowTests(unittest.TestCase):
             def options(data):
                 order.append(('options', data))
                 raise common.Error('stop here')
-            with patch.object(patches, 'ORIGINALS_2159_1231', originals), \
+            with patch.object(patches, recipe_name, originals), \
                     patch.object(patches.legacy_html, 'patch_ui', return_value=b'html'), \
                     patch.object(patches.dialog_serializers, 'patch_ui', side_effect=serializers), \
                     patch.object(patches.options_show, 'patch_ui', side_effect=options), \
@@ -107,7 +112,8 @@ class OptionsShowTests(unittest.TestCase):
         self.assertEqual(order, [('serializers', b'html'), ('options', b'serialized')])
 
     def test_setup_writes_the_assembly_with_the_options_fix(self):
-        self.assertEqual(patches.ui_patched_hash('2.159.1231.0'), options_show.UI_2159_1231_PATCHED_SHA256)
+        for version in patches.DIALOG_RECIPES:
+            self.assertEqual(patches.ui_patched_hash(version), options_show.UI_PATCHED_SHA256[version])
 
 
 if __name__ == '__main__':

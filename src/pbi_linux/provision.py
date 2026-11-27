@@ -103,10 +103,12 @@ def configure(prefix, runtime, paths, log):
     registry(wine, env, r'HKCU\Software\Wine\Drivers', 'Graphics', 'REG_SZ', 'wayland', log)
     registry(wine, env, r'HKCU\Software\Wine\AppDefaults\msedgewebview2.exe', 'Version', 'REG_SZ', 'win7', log)
     # Links Desktop opens start the browser outside the session; see open-url.
-    # winebrowser splits this list at commas and falls back to the next entry.
+    # winebrowser splits this list at commas, falls back to the next entry and
+    # parses each one as a Windows command line, so a path with spaces is quoted.
     opener = Path(__file__).resolve().parent / 'open-url'
-    if ',' not in str(opener):
-        registry(wine, env, r'HKCU\Software\Wine\WineBrowser', 'Browsers', 'REG_SZ', str(opener) + ',xdg-open', log)
+    if not any(c in str(opener) for c in ',"'):
+        registry(wine, env, r'HKCU\Software\Wine\WineBrowser', 'Browsers', 'REG_SZ',
+                 '"' + str(opener) + '",xdg-open', log)
     registry(wine, env, r'HKCU\Software\Microsoft\Avalon.Graphics', 'DisableHWAcceleration', 'REG_DWORD', '1', log)
     # Desktop's documented policy: validated releases are managed by this project.
     registry(wine, env, r'HKLM\Software\Microsoft\Microsoft Power BI Desktop',

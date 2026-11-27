@@ -25,9 +25,12 @@ import re
 import struct
 from .common import Error
 
-# The complete Microsoft.Mashup.Client.UI.dll of 2.159.1231.0 after
+# The complete Microsoft.Mashup.Client.UI.dll of each build after
 # legacy_html.patch_ui and this module.
-UI_2159_1231_PATCHED_SHA256 = '1ecad1e587dad994d2a48e024c3fb3ba71d1be655cdacc448608a306e6dd0c62'
+UI_PATCHED_SHA256 = {
+    '2.159.1231.0': '1ecad1e587dad994d2a48e024c3fb3ba71d1be655cdacc448608a306e6dd0c62',
+    '2.160.1151.0': 'e6fb874fd98437dedf2a1cf5187d3532754241adf520354087cabc7b1773677f',
+}
 
 _WALKER = (
     b'function toJS(v,k,o){var i,p,r;'

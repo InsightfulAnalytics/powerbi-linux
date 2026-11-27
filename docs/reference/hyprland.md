@@ -139,6 +139,13 @@ only the first two patches gave the same results.
   The stress rounds show no regression, not the absence of the race.
 - Hyprland 0.56.2 offers no `xdg_toplevel_icon_manager_v1`, so windows have no
   per-window icon.
+- `tools/test-window-frame.py` fails its "owned frame preserved" case here and
+  passes under GNOME (mutter 50.6, checked 2026-11-27). Hyprland sends the
+  owned test form a configure with the maximized state, even as a floating
+  window, so Desktop's base class gives it the maximized insets (4,4,4,5) as on
+  Windows. The probe expects the normal frame; the custom frame and resize
+  zones pass. Runtimes from before and after the 2026-11-27 changes give the
+  same result.
 - No published runtime contains these patches. Until one does, build a runtime
   from the source tree; see [building](../development/build.md).
 
@@ -256,5 +263,45 @@ Limits:
 - One host. Other compositors answer a maximized start with a size, and send no
   configure without a toplevel event to a version 2 client as far as is known;
   neither was tested.
-- The second case of a missing tile prediction (a floating window that is the
-  first of its workspace) was not exercised.
+- The second case of a missing tile prediction (the first window of a
+  workspace while the focus is elsewhere) was exercised on 2026-11-27: a
+  maximized probe mapped on a workspace without the focus. With runtime
+  0.1.7-local.14, which skipped the restore for an initial configure sent
+  before the compositor saw the maximize request, it floated at 2568 x 1088
+  in 6 of 20 starts; with 0.1.7-local.15 (archive SHA-256
+  `609d4cc8a2b3e1f94f303a4286f7cefefa3327f8040e8617dcc2599cacd7dc18`), which
+  restores on every initial configure, it was tiled and maximized in 24 of 24
+  (12 with that driver built alone, 12 with the archive).
+
+## Fedora 44 GNOME container check: 2026-11-27
+
+Not Hyprland, but recorded here beside the other compositor evidence. A
+Fedora 44 container with systemd, a lingering user and `mutter 50.6 --headless
+--wayland --no-x11 --virtual-monitor 1920x1080` (software rendering, no input
+device), on the same host.
+
+- The RPM built by `tools/build-rpm.py` installed and passed `rpm -V`.
+- `pbi-linux setup --runtime` with a local runtime and the cached installers
+  completed; `doctor` passed all 25 checks.
+- `tools/test-window-frame.py` passed, including the owned frame case that
+  fails on Hyprland.
+- With runtime 0.1.7-local.12, Desktop showed two .NET "Culture is not
+  supported" errors at start and never loaded the report. The seat had no
+  keyboard, so no keymap ever arrived, and the driver announced a keyboard
+  layout of language 0 when a window gained text input focus. From runtime
+  0.1.7-local.13 (`wine-11.18-wayland-no-layout-hkl.patch`) Desktop loads it
+  with no dialog.
+- The container had only Cantarell and Noto Sans, so ▲ and ▼ had no fallback
+  font. Fedora Workstation installs Noto Sans Symbols 2 through
+  `default-fonts-core-math`; the packages now depend on it
+  (`font(notosanssymbols2)`, Debian `fonts-noto-core`, Arch `noto-fonts`).
+- A fresh setup on 0.1.7-local.14, then `pbi-linux update` to
+  0.1.7-local.15: `doctor` passed. On local.15 a copy of a report with tinted
+  pill badges rendered `$258K`,
+  `LY $231K` and ▲ ▼ in Noto Sans Symbols 2, as on Hyprland and Windows.
+  `dialog-size.py` (error report and Data source settings),
+  `test-number-format.py`, `test-window-frame.py`, `test-legacy-html.py`,
+  `test-html-int64.py`, `test-store-rating.py`, `test-cache-compatibility.py`
+  and `test-signin-settings.py` passed.
+- Not run there: anything that needs input (no input device), the cursor
+  wake test, and `tools/check-product.py`'s builder-compiled native probes.

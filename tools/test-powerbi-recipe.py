@@ -23,10 +23,11 @@ def main():
     if args.output.exists():
         parser.error('Evidence output must be a new file')
     originals = patches.RECIPES[args.version]
-    # The Auto recovery dialog patch is verified on 2.159.1231.0 only, as in setup.
-    windows = autorecovery.patch_windows if originals is patches.ORIGINALS_2159_1231 else (lambda data: data)
+    # The dialog patches are verified on the builds in DIALOG_RECIPES only, as in setup.
+    verified = args.version in patches.DIALOG_RECIPES
+    windows = autorecovery.patch_windows if verified else (lambda data: data)
     dialogs = ((lambda data: options_show.patch_ui(dialog_serializers.patch_ui(data)))
-               if originals is patches.ORIGINALS_2159_1231 else (lambda data: data))
+               if verified else (lambda data: data))
     result = {'schema': 1, 'date': datetime.datetime.now(datetime.timezone.utc).isoformat(),
               'powerbi_version': args.version, 'scope': 'Offline original-file/resource guards only; not native UI or release certification',
               'status': 'failed', 'files': {}}
@@ -45,6 +46,17 @@ def main():
                 raise Error('A fixed-size assembly patch changed the file length')
             result['files'][name] = {'original_sha256': hashlib.sha256(source).hexdigest(),
                                       'patched_sha256': hashlib.sha256(output).hexdigest(), 'length_preserved': True}
+        # PBIDesktop.exe.config is changed only for builds whose original is known.
+        config_hash = patches.CONFIG_ORIGINALS.get(args.version)
+        config = args.originals / patches.DESKTOP_CONFIG
+        if config_hash:
+            check_digest(config, config_hash)
+            source = config.read_bytes()
+            output = patches.patch_config(source)
+            result['files'][patches.DESKTOP_CONFIG] = {'original_sha256': config_hash,
+                                                       'patched_sha256': hashlib.sha256(output).hexdigest()}
+        else:
+            result['desktop_config'] = 'not changed: no verified original for this build'
         picker = args.originals / text_pickers.DOCUMENT
         if picker.is_file():
             source = picker.read_bytes()

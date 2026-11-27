@@ -9,6 +9,11 @@ Map those blocks to Noto Sans Symbols 2, Noto Sans Math, Noto Sans Symbols,
 DejaVu Sans or Liberation Sans, whichever is installed first, and add more
 candidates to the Arrows block. The family list per mapping grows from 4 to
 8 entries.
+When a mapping matched but none of its fonts had the characters,
+MapCharacters() reported the whole locale span as unmapped rather than the
+mapped run, so text after the symbol (CJK beside an unsupported operator,
+for example) lost its own fallback. With more blocks mapped that becomes
+more likely; only the mapped run is now reported.
 Wine-derived change: LGPL-2.1-or-later.
 
 --- a/dlls/dwrite/analyzer.c
@@ -44,7 +49,20 @@ Wine-derived change: LGPL-2.1-or-later.
  
      /* Miscellaneous Symbols - 2600-26FF */
      { "2600-26FF",              L"Noto Sans Symbols2, Noto Sans Symbols 2, Noto Sans Symbols" },
-@@ -3102,7 +3124,7 @@
+@@ -2582,9 +2604,10 @@
+         }
+     }
+ 
+-    /* Mapping was found, but either font couldn't be created or there's no font that supports given input. */
++    /* Mapping was found, but either font couldn't be created or there's no font that supports given input.
++       Only the mapped run is left without a font, so the text after it still gets its own fallback. */
+     *ret_font = NULL;
+-    *ret_length = length;
++    *ret_length = mapped;
+ 
+     return S_OK;
+ }
+@@ -3102,7 +3125,7 @@
      unsigned int range_count, families_count;
      IDWriteFactory7 *factory = param;
      DWRITE_UNICODE_RANGE ranges[16];

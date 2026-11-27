@@ -17,7 +17,7 @@ p.add_argument('--with-runtime-sources',action='store_true')
 args=p.parse_args()
 output=args.output.resolve()
 allowed=('src','runtime','connectors','tests','packaging','tools','docs','.github','LICENSE','LICENSES',
-         'README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore')
+         'README.md','CONTRIBUTING.md','SECURITY.md','SECURITY-RULES.md','CODE_OF_CONDUCT.md','CHANGELOG.md','.gitignore')
 if output.exists():
     raise SystemExit('Output must be a new directory')
 if (ROOT.resolve().is_relative_to(output) or output.is_relative_to(ROOT/'sources')

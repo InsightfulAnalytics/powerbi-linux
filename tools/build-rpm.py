@@ -7,18 +7,12 @@ import subprocess
 import sys
 import tarfile
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from source_tree import excluded, refuse_symlinks
+from source_tree import archive_filter, refuse_symlinks
 ROOT=Path(__file__).resolve().parent.parent
-SOURCES=('src','runtime','connectors','packaging','docs','tests','tools','.github','.gitignore','LICENSE','LICENSES','README.md','CONTRIBUTING.md','SECURITY.md','CODE_OF_CONDUCT.md','CHANGELOG.md')
+SOURCES=('src','runtime','connectors','packaging','docs','tests','tools','.github','.gitignore','LICENSE','LICENSES','README.md','CONTRIBUTING.md','SECURITY.md','SECURITY-RULES.md','CODE_OF_CONDUCT.md','CHANGELOG.md')
 TOP='powerbi-linux-0.1.0'
-def member(info):
-    # The spec copies packaging/ whole, so makepkg output and local files stop here.
-    if excluded(ROOT/Path(info.name).relative_to(TOP)):
-        return None
-    # The spec installs with cp -a. Modes as the checkout reports them (0777 on
-    # some mounts) would make the installed code writable by every local user.
-    info.mode = 0o755 if info.isdir() or info.mode & 0o111 else 0o644
-    return info
+# The spec copies packaging/ whole, so makepkg output and local files stop here.
+member=archive_filter(TOP)
 p=argparse.ArgumentParser()
 p.add_argument('--engine',choices=['docker','podman'],default='docker')
 p.add_argument('--local',action='store_true')

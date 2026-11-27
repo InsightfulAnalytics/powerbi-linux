@@ -20,7 +20,12 @@ def session_unit(data):
     return 'pbi-linux-session' + ('-' + token if token else '') + '.service'
 
 
-UNIT = session_unit(Paths().data)
+def __getattr__(name):
+    # UNIT is computed on use, so a bad XDG variable reaches main's error
+    # message instead of failing the import with a traceback.
+    if name == 'UNIT':
+        return session_unit(Paths().data)
+    raise AttributeError('module ' + repr(__name__) + ' has no attribute ' + repr(name))
 
 
 def file_argument(value):
@@ -138,16 +143,41 @@ def wait_for_closing_session(paths):
         raise Error('Power BI is still closing. Try again in a few seconds. ' + STUCK_HELP) from exc
 
 
-def stop(paths):
-    """Force-quit this installation's Power BI: every window closes without saving."""
+def starting(paths):
+    """True while open holds the launch lock, which only a session start takes."""
     try:
-        with paths.lock('maintenance', wait=5):
-            _stop(paths)
-    except Error as exc:
-        if str(exc) != 'Another maintenance operation is running':
-            raise
-        raise Error('A repair, update or session start is still running; '
-                    'wait for it to finish, then run pbi-linux stop again') from exc
+        with paths.lock('launch'):
+            return False
+    except Error:
+        return True
+
+
+def stop(paths):
+    """Force-quit this installation's Power BI: every window closes without saving.
+
+    A session start holds the maintenance lock for at most LAUNCH_WAIT, so stop
+    waits for it instead of refusing; a repair or update is never interrupted.
+    """
+    busy = 'Another maintenance operation is running'
+    waited_for_start = False
+    for wait in (5, LAUNCH_WAIT):
+        if wait == LAUNCH_WAIT:
+            if not starting(paths):
+                break
+            waited_for_start = True
+            print('A session start is still running; stop waits up to ' + str(LAUNCH_WAIT) +
+                  ' more seconds for it to finish.', file=sys.stderr, flush=True)
+        try:
+            with paths.lock('maintenance', wait=wait):
+                _stop(paths)
+            return
+        except Error as exc:
+            if str(exc) != busy:
+                raise
+    if waited_for_start:
+        raise Error('Power BI is still starting or another operation took over; '
+                    'run pbi-linux stop again in a moment')
+    raise Error('A repair or update is still running; wait for it to finish, then run pbi-linux stop again')
 
 
 def _stop(paths):
@@ -290,7 +320,13 @@ def _broker(paths, diagnostics):
     started = False
     theme_sync = ThemeSync(paths, runtime, env)
     with socket.socket(socket.AF_UNIX) as server:
-        server.bind(str(paths.socket))
+        # Created 0600, not chmodded after bind: no moment with wider access. No
+        # other thread runs yet, so the process-wide umask affects nothing else.
+        umask = os.umask(0o177)
+        try:
+            server.bind(str(paths.socket))
+        finally:
+            os.umask(umask)
         os.chmod(paths.socket, 0o600)
         server.listen(8)
         server.settimeout(1)
@@ -310,7 +346,10 @@ def _broker(paths, diagnostics):
                     break
                 try:
                     client, _ = server.accept()
-                except OSError:  # The 1 s timeout, or a transient accept failure.
+                except TimeoutError:  # The 1 s timeout.
+                    continue
+                except OSError:  # A transient failure (EMFILE): retry, but do not spin.
+                    time.sleep(1)
                     continue
                 with client:
                     client.settimeout(5)

@@ -102,7 +102,7 @@ class DialogSerializerTests(unittest.TestCase):
         self.assertIn(b'ko.isObservable(v)', walker)
 
     def test_only_2159_1231_writes_the_combined_hash(self):
-        self.assertEqual(patches.ui_patched_hash('2.159.1231.0'), patches.options_show.UI_2159_1231_PATCHED_SHA256)
+        self.assertEqual(patches.ui_patched_hash('2.159.1231.0'), patches.options_show.UI_PATCHED_SHA256['2.159.1231.0'])
         for version in ('2.158.1177.0', '2.159.883.0'):
             self.assertEqual(patches.ui_patched_hash(version), patches.legacy_html.patched_hash(version))
 
@@ -128,9 +128,11 @@ class DialogSerializerTests(unittest.TestCase):
                 self.assertEqual(common.digest(app / name), sha)
             return str(raised.exception)
 
-    def test_2159_1231_setup_refuses_an_unknown_serializer_before_replacing_files(self):
-        self.assertIn('Unsupported floating dialog serializer resource',
-                      self.install_until_failure('ORIGINALS_2159_1231'))
+    def test_verified_builds_refuse_an_unknown_serializer_before_replacing_files(self):
+        for recipe_name in ('ORIGINALS_2159_1231', 'ORIGINALS_2160'):
+            with self.subTest(recipe=recipe_name):
+                self.assertIn('Unsupported floating dialog serializer resource',
+                              self.install_until_failure(recipe_name))
 
     def test_other_builds_leave_the_serializers_alone(self):
         for recipe_name in ('ORIGINALS', 'CURRENT_ORIGINALS'):
