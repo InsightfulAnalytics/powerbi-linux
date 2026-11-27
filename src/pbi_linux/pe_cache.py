@@ -26,11 +26,15 @@ def webview(prefix):
     return max(files, key=version)
 
 
+def _lock_file(cache):
+    return os.fdopen(os.open(cache / '.lock', os.O_RDWR | os.O_CREAT, 0o600))
+
+
 @contextlib.contextmanager
-def _locked(cache):
+def _locked(cache, lock=None):
     """One writer at a time: prune deletes the link names a refresh is still using."""
-    with (cache / '.lock').open('a') as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
+    with lock or _lock_file(cache) as held:
+        fcntl.flock(held, fcntl.LOCK_EX)
         yield
 
 
@@ -134,10 +138,15 @@ def refresh(source, cache):
     identity gives what a rebuild would.
     """
     try:
-        with _locked(cache):
-            return _refresh(source, cache)
+        lock = _lock_file(cache)
     except OSError:
-        return False
+        # A cache that cannot be written is still used when nothing needs renaming.
+        return status(source, cache) == 'current'
+    with _locked(cache, lock):
+        try:
+            return _refresh(source, cache)
+        except OSError:
+            return False
 
 
 def _refresh(source, cache):

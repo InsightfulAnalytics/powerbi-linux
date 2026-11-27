@@ -5,6 +5,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'src'))
 from pbi_linux import common, pe_cache
@@ -130,6 +131,19 @@ class PeCacheTests(unittest.TestCase):
         self.assertGreaterEqual(time.monotonic() - started, 0.4)
         thread.join()
         self.assertTrue(pe_cache.valid(self.source, self.cache))
+
+    def test_a_cache_that_cannot_be_written_is_used_as_it_is(self):
+        pe_cache.prepare(self.source, self.cache)
+        with patch.object(pe_cache, '_lock_file', side_effect=PermissionError):
+            self.assertTrue(pe_cache.refresh(self.source, self.cache))
+            self.move_identity()
+            self.assertFalse(pe_cache.refresh(self.source, self.cache))
+
+    def test_the_lock_file_is_private_and_kept(self):
+        pe_cache.prepare(self.source, self.cache)
+        self.move_identity()
+        self.assertTrue(pe_cache.refresh(self.source, self.cache))
+        self.assertEqual((self.cache / '.lock').stat().st_mode & 0o777, 0o600)
 
     def test_missing_manifest_is_stale(self):
         self.assertEqual(pe_cache.status(self.source, self.cache), 'stale')

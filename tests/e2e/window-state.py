@@ -157,6 +157,7 @@ def main():
         home=a.workspace or found['workspace']['id']
         if a.workspace:
             move(found['address'],a.workspace)
+            found=next((c for c in clients() if c['address']==found['address']),found)
         # Alone on the hidden workspace, the window gets that workspace's whole
         # area: the sizes compare only if it was alone at home too.
         others=[c for c in clients() if str(c['workspace']['id'])==str(home)

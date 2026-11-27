@@ -413,8 +413,8 @@ BOOL pbi_dcomp_start_consumer(void)
 /* Called after the D3D11 context flush, rather than from a DXGI pre-Present
  * hook. Each process publishes at most 64 live owner HWNDs. The caller holds the
  * graphics context lock, so all the waits on other publishers and on the
- * consumer share one deadline, frame_wait(PUBLISH_WAIT); none of them takes a
- * graphics lock. */
+ * consumer share one deadline, TICK_STEP + frame_wait(PUBLISH_WAIT); none of
+ * them takes a graphics lock. */
 BOOL pbi_dcomp_publish(HWND hwnd, HWND window, const void *pixels, UINT width, UINT height, UINT pitch)
 {
     static struct pbi_transport writers[MAX_HOSTS];

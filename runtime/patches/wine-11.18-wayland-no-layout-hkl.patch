@@ -11,8 +11,9 @@ which the report never loaded.
 Seen under GNOME (mutter 50.6, headless with a virtual monitor and no input
 device, Fedora 44 container, 2026-11-27); WINEDEBUG=+keyboard showed
 "Changing keyboard layout to 0xffffffffe0010000".
-Post nothing until a layout exists. set_current_xkb_group activates the
-layout, with the IME state, when the keymap arrives, as before.
+Post nothing until a layout exists, on text input focus or on keyboard
+focus (which posted layout 0). set_current_xkb_group activates the layout,
+with the IME state, when the keymap arrives, as before.
 Applies after wine-11.18-composition.patch.
 Wine-derived change: LGPL-2.1-or-later.
 
@@ -32,3 +33,15 @@ Wine-derived change: LGPL-2.1-or-later.
      TRACE("Changing keyboard layout to %p\n", hkl);
      NtUserPostMessage(hwnd, WM_INPUTLANGCHANGEREQUEST, 0 /*FIXME*/, (LPARAM)hkl);
  }
+@@ -804,8 +809,9 @@
+     keyboard->focused_hwnd = hwnd;
+     pthread_mutex_unlock(&keyboard->mutex);
+ 
+-    NtUserPostMessage(keyboard->focused_hwnd, WM_INPUTLANGCHANGEREQUEST, 0 /*FIXME*/,
+-                      (LPARAM)keyboard_hkl);
++    if (keyboard_hkl)
++        NtUserPostMessage(keyboard->focused_hwnd, WM_INPUTLANGCHANGEREQUEST, 0 /*FIXME*/,
++                          (LPARAM)keyboard_hkl);
+ 
+     if (!(data = wayland_win_data_get(hwnd))) return;
+ 

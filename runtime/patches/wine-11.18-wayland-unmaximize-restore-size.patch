@@ -146,10 +146,10 @@ Wine-derived change: LGPL-2.1-or-later.
              surface->requested = surface->pending;
              memset(&surface->pending, 0, sizeof(surface->pending));
          }
-@@ -263,6 +266,63 @@
-  *
-  * Destroys a wayland surface.
-  */
+@@ -258,6 +261,63 @@
+     return NULL;
+ }
+ 
 +static void maximize_sync_done(void *data, struct wl_callback *callback, uint32_t time)
 +{
 +    struct wayland_win_data *win_data;
@@ -207,9 +207,9 @@ Wine-derived change: LGPL-2.1-or-later.
 +    wl_event_queue_destroy(idle);
 +}
 +
- void wayland_surface_destroy(struct wayland_surface *surface)
- {
-     pthread_mutex_lock(&process_wayland.pointer.mutex);
+ /**********************************************************************
+  *          wayland_surface_destroy
+  *
 @@ -494,6 +554,7 @@
  
      memset(&surface->pending, 0, sizeof(surface->pending));
