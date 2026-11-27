@@ -264,9 +264,14 @@ Limits:
   configure without a toplevel event to a version 2 client as far as is known;
   neither was tested.
 - The second case of a missing tile prediction (the first window of a
-  workspace while the focus is elsewhere) was exercised on 2026-11-27 with
-  runtime 0.1.7-local.12: a window rule mapped the maximized probe on the
-  shown workspace of another output, and it was tiled and maximized.
+  workspace while the focus is elsewhere) was exercised on 2026-11-27: a
+  maximized probe mapped on a workspace without the focus. With runtime
+  0.1.7-local.14, which skipped the restore for an initial configure sent
+  before the compositor saw the maximize request, it floated at 2568 x 1088
+  in 6 of 20 starts; with 0.1.7-local.15 (archive SHA-256
+  `609d4cc8a2b3e1f94f303a4286f7cefefa3327f8040e8617dcc2599cacd7dc18`), which
+  restores on every initial configure, it was tiled and maximized in 24 of 24
+  (12 with that driver built alone, 12 with the archive).
 
 ## Fedora 44 GNOME container check: 2026-11-27
 
@@ -283,20 +288,20 @@ device), on the same host.
 - With runtime 0.1.7-local.12, Desktop showed two .NET "Culture is not
   supported" errors at start and never loaded the report. The seat had no
   keyboard, so no keymap ever arrived, and the driver announced a keyboard
-  layout of language 0 when a window gained text input focus. Runtime
-  0.1.7-local.13 (`wine-11.18-wayland-no-layout-hkl.patch`, archive SHA-256
-  `ca58cd440a8de9a67a3eb6e85c527e1d8a9613275e5a0ab239f9303fc3395492`) loads
-  it with no dialog. That build names the patch by its first name,
-  `wine-11.18-wayland-no-keymap-hkl.patch`; the content and SHA-256
-  (`5cdb50d6...`) are the same.
+  layout of language 0 when a window gained text input focus. From runtime
+  0.1.7-local.13 (`wine-11.18-wayland-no-layout-hkl.patch`) Desktop loads it
+  with no dialog.
 - The container had only Cantarell and Noto Sans, so ▲ and ▼ had no fallback
   font. Fedora Workstation installs Noto Sans Symbols 2 through
   `default-fonts-core-math`; the packages now depend on it
   (`font(notosanssymbols2)`, Debian `fonts-noto-core`, Arch `noto-fonts`).
-- On local.13 a copy of a report with tinted pill badges rendered `$258K`,
+- A fresh setup on 0.1.7-local.14, then `pbi-linux update` to
+  0.1.7-local.15: `doctor` passed. On local.15 a copy of a report with tinted
+  pill badges rendered `$258K`,
   `LY $231K` and ▲ ▼ in Noto Sans Symbols 2, as on Hyprland and Windows.
   `dialog-size.py` (error report and Data source settings),
-  `test-number-format.py`, `test-legacy-html.py`, `test-html-int64.py`,
-  `test-store-rating.py` and `test-cache-compatibility.py` passed.
+  `test-number-format.py`, `test-window-frame.py`, `test-legacy-html.py`,
+  `test-html-int64.py`, `test-store-rating.py`, `test-cache-compatibility.py`
+  and `test-signin-settings.py` passed.
 - Not run there: anything that needs input (no input device), the cursor
   wake test, and `tools/check-product.py`'s builder-compiled native probes.

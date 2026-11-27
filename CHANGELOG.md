@@ -48,9 +48,12 @@
   is reported without a traceback; a damaged PE cache manifest counts as
   stale. Frame transport: a publisher's waits share one deadline, waits grow
   with the frame size (an 8K frame was often dropped), and the shared objects
-  are renamed for the larger mapping. Wayland: a window whose own maximize
+  are renamed for the larger mapping. Wayland (runtime 0.1.7-local.15): a window whose own maximize
   request is unanswered is not resized to its normal size by an older
-  configure. Native checks clean up after a deadline; `window-state.py`
+  configure, told apart by a `wl_display.sync` handled in order with the
+  configures; the initial configure still restores, so a maximized start
+  on a workspace without the focus is tiled. The PE cache allows one writer
+  at a time and is used read-only when it cannot be written. Native checks clean up after a deadline; `window-state.py`
   verifies its setup; the e2e probes use the installation's Wine.
 - Apply the four legacy HTML dialog fixes to Desktop 2.160.1151.0 as well as
   2.159.1231.0 (`pbi-linux repair` applies them; `doctor` reports each): the
