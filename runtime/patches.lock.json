@@ -16,7 +16,7 @@
   "wine-11.18-wayland-keep-toplevel-state.patch": "06c313d1cb8e371c31afdb0fa91ff4f1ccd66926d9d9b0a65ff45aa7b9fd8312",
   "wine-11.18-wayland-normal-resize.patch": "59ece0115d772d0671e98fb7cb18930dfb1aa2045b8b38c37ee72f623ae58446",
   "wine-11.18-wayland-parent.patch": "d8ed5e7c1d8d9f2751fb99a45d59f28594667f18f72a090f71ddb51ddebee346",
-  "wine-11.18-wayland-unmaximize-restore-size.patch": "f59dd55fc482c850ad218f1ab6c8147b74e0f32ff39dd9d7275a1d1ed31c3952",
+  "wine-11.18-wayland-unmaximize-restore-size.patch": "6a6b893349a03a1d7cbaac42f27fba80ab6ae2f51809e3e6ff20025c9f2fe031",
   "wine-11.18-named-pipe-directory.patch": "27624153cb54602a0040bad995ce39c467109756f09f8147ea2942cff36f680c",
   "wine-11.18-oleaut32-format-scaling.patch": "50274267e01cd6e275cffa5a070009a5716cbe3cdfb0c450a42af1f33893391e",
   "wine-11.18-oledb32-variant-currency.patch": "87fc30b1fda3896447cc8ee0800e781719398d36853cc3fcb272a86e6fd62be7",
