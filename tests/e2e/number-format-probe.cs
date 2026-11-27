@@ -2,7 +2,9 @@
 // Number formatting and currency conversion that Power BI Desktop relies on.
 // VarFormat: Analysis Services formats DAX FORMAT() results through oleaut32.
 // IDataConvert: the MSOLAP provider converts VARIANT cells to bound currency columns.
+// VarDecRound: .NET Framework rounds System.Decimal (Math.Round, Convert.ToInt64) through oleaut32.
 using System;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 [ComImport, Guid("0C733A8D-2A1C-11CE-ADE5-00AA0044773D"), InterfaceType(ComInterfaceType.InterfaceIsIUnknown)]
@@ -16,7 +18,25 @@ static class NumberFormatProbe {
   static extern int VarFormat(ref object value, string format, int firstDay, int firstWeek, uint flags,
     [MarshalAs(UnmanagedType.BStr)] out string result);
 
+  [DllImport("oleaut32.dll")]
+  static extern int VarDecRound(ref decimal value, int decimals, out decimal result);
+
   static int failures;
+
+  static void Check(string label, decimal actual, decimal expected) {
+    var c = CultureInfo.InvariantCulture;
+    bool ok = actual == expected && actual.ToString(c) == expected.ToString(c);
+    if (!ok) failures++;
+    Console.WriteLine("{0} {1} = {2}, expected {3}", ok ? "PASS" : "FAIL", label, actual.ToString(c),
+      expected.ToString(c));
+  }
+
+  static void Round(decimal value, int decimals, decimal expected) {
+    decimal actual;
+    int hr = VarDecRound(ref value, decimals, out actual);
+    if (hr != 0) { failures++; Console.WriteLine("FAIL VarDecRound({0}, {1}) hr {2:X8}", value, decimals, hr); return; }
+    Check(string.Format(CultureInfo.InvariantCulture, "VarDecRound({0}, {1})", value, decimals), actual, expected);
+  }
 
   static void Format(object value, string format, string expected) {
     string actual;
@@ -69,6 +89,23 @@ static class NumberFormatProbe {
     ToCurrency(convert, new CurrencyWrapper(258409.41m));
     ToCurrency(convert, 258409.41m);
     ToCurrency(convert, 258409.41);
+
+    // Round half to even, as on Windows (.NET documents Math.Round(decimal) as banker's rounding).
+    Round(258.40941m, 0, 258m);
+    Round(258409.41m, 0, 258409m);
+    Round(258409.51m, 0, 258410m);
+    Round(-258409.41m, 0, -258409m);
+    Round(1.049m, 1, 1.0m);
+    Round(1.050m, 1, 1.0m);
+    Round(1.150m, 1, 1.2m);
+    Round(2.5m, 0, 2m);
+    Round(3.5m, 0, 4m);
+    Round(-2.5m, 0, -2m);
+    Round(0.15m, 1, 0.2m);
+    Check("Math.Round(258.40941m)", Math.Round(258.40941m, 0), 258m);
+    Check("Math.Round(2.5m)", Math.Round(2.5m), 2m);
+    Check("Convert.ToInt64(258409.41m)", Convert.ToInt64(258409.41m), 258409m);
+    Check("decimal.ToOACurrency(1.23456m)", decimal.FromOACurrency(decimal.ToOACurrency(1.23456m)), 1.2346m);
 
     Console.WriteLine(failures == 0 ? "COMPLETED: number formats" : "FAILED: " + failures + " cases");
     return failures == 0 ? 0 : 1;

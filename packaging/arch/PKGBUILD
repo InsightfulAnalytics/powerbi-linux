@@ -19,6 +19,7 @@ license=('GPL-3.0-or-later' 'LGPL-2.1-or-later' 'Zlib')
 # wpcap.so imports libpcap.so.0.8, and Desktop does not capture packets.
 depends=('python>=3.12' 'systemd' 'samba' 'desktop-file-utils' 'shared-mime-info'
          'hicolor-icon-theme' 'xdg-utils' 'zenity' 'cabextract' 'fontconfig'
+         'noto-fonts'
          'freetype2' 'vulkan-icd-loader' 'libxkbcommon' 'gnutls' 'libunwind'
          'libglvnd' 'unixodbc' 'wayland' 'libpulse' 'alsa-lib' 'gstreamer'
          'gst-plugins-base-libs')

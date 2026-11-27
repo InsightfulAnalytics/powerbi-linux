@@ -18,6 +18,8 @@ Requires:       xdg-utils
 Requires:       zenity
 Requires:       cabextract
 Requires:       fontconfig
+# Symbol fallback for Geometric Shapes and the other Segoe UI Symbol blocks.
+Requires:       font(notosanssymbols2)
 Requires:       freetype
 Requires:       vulkan-loader
 Requires:       libxkbcommon

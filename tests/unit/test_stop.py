@@ -72,9 +72,33 @@ class ProcessTests(unittest.TestCase):
 
     def test_stop_never_interrupts_a_repair(self):
         with self.paths.lock('maintenance'), patch.object(launch.subprocess, 'run') as run:
-            with self.assertRaisesRegex(common.Error, 'repair, update or session start'):
+            with self.assertRaisesRegex(common.Error, 'repair or update is still running'):
                 launch.stop(self.paths)
         run.assert_not_called()
+
+    def test_stop_waits_for_a_session_start_instead_of_refusing(self):
+        import threading
+        held, release = threading.Event(), threading.Event()
+        def start():
+            with self.paths.lock('launch'), self.paths.lock('maintenance'):
+                held.set()
+                release.wait(10)
+        starter = threading.Thread(target=start)
+        starter.start()
+        self.addCleanup(starter.join)
+        self.addCleanup(release.set)
+        held.wait(5)
+        threading.Timer(6, release.set).start()  # Past stop's first 5 s wait.
+        with patch.object(launch, '_stop') as stopped, patch.object(launch, 'LAUNCH_WAIT', 20):
+            launch.stop(self.paths)
+        stopped.assert_called_once_with(self.paths)
+
+    def test_a_start_that_outlasts_the_wait_is_not_called_a_repair(self):
+        with self.paths.lock('launch'), self.paths.lock('maintenance'):
+            with patch.object(launch, '_stop') as stopped, patch.object(launch, 'LAUNCH_WAIT', 0.3):
+                with self.assertRaisesRegex(common.Error, 'still starting'):
+                    launch.stop(self.paths)
+        stopped.assert_not_called()
 
     def test_maintenance_waits_for_a_closing_session_then_refuses_kindly(self):
         with self.paths.lock('session'), patch.object(launch, 'SESSION_WAIT', 0.2):

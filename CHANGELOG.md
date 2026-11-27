@@ -14,6 +14,56 @@
   gives Geometric Shapes (▲ ▼), box drawing, block elements and the other
   blocks Windows covers with Segoe UI Symbol a fallback font, so they no
   longer render as boxes. `tools/test-number-format.py` checks the first two.
+- Round decimals as Windows does (runtime 0.1.7-local.12).
+  `wine-11.18-oleaut32-decimal-round.patch`: VarDecRound rounded up whenever
+  the discarded part was 5 or more units in its last place, so .NET
+  `Math.Round(258.40941m, 0)` gave 259 and `Convert.ToInt64(258409.41m)` gave
+  258410. It now rounds to nearest, half to even. `tools/test-number-format.py`
+  covers it.
+  The symbol fallback patch also stops a symbol that no installed font has
+  from taking the fallback away from the text after it.
+- Start on a seat without a keyboard (runtime 0.1.7-local.13).
+  `wine-11.18-wayland-no-layout-hkl.patch`: before a keymap existed, text
+  input focus announced a keyboard layout of language 0, and Desktop showed
+  two .NET "Culture is not supported" errors at start instead of the report.
+  Found on headless GNOME in a Fedora 44 container.
+- The packages depend on Noto Sans Symbols 2 (`font(notosanssymbols2)`,
+  Debian `fonts-noto-core`, Arch `noto-fonts`), the font the symbol fallback
+  finds first; without it ▲ and ▼ had no fallback.
+- Review fixes: `pbi-linux update` keeps a locally built runtime
+  (`0.1.7-local.N`) instead of replacing it with a published pre-release whose
+  label sorts higher; the WineBrowser entry quotes the `open-url` path, which
+  winebrowser parses as a command line; the session broker no longer spins
+  when `accept` fails for a reason other than its timeout; the RPM source
+  archive test uses the builder's own member filter and checks its mode
+  clamp; source exports and the SRPM include `SECURITY-RULES.md`, which
+  `SECURITY.md` links to.
+- `PBIDesktop.exe.config` is changed only when its original checksum is known
+  (security rule 5): 2.159.1231.0 and 2.160.1151.0. 2.158.1177.0 and
+  2.159.883.0, whose installers can no longer be downloaded to check, keep
+  their configuration (repair puts back one an earlier repair changed) and
+  launch names the AppDomain manager instead, as before the configuration
+  patch. `pbi-linux stop` waits for a session start (at most 85 s) instead of
+  refusing it; the broker socket is created with mode 0600; a bad XDG variable
+  is reported without a traceback; a damaged PE cache manifest counts as
+  stale. Frame transport: a publisher's waits share one deadline, waits grow
+  with the frame size (an 8K frame was often dropped), and the shared objects
+  are renamed for the larger mapping. Wayland: a window whose own maximize
+  request is unanswered is not resized to its normal size by an older
+  configure. Native checks clean up after a deadline; `window-state.py`
+  verifies its setup; the e2e probes use the installation's Wine.
+- Apply the four legacy HTML dialog fixes to Desktop 2.160.1151.0 as well as
+  2.159.1231.0 (`pbi-linux repair` applies them; `doctor` reports each): the
+  shared dialog serializers, so OK works in Options, Export template, View as,
+  connector warnings and about 15 more; the "Auto recovery" serializer, so its
+  OK closes Desktop again; the Options show call, so Options appears where the
+  compositor honours window opacity (Hyprland); and the Data source settings
+  scroll step. The changed resources are byte-identical to those of
+  2.159.1231.0. Whole-assembly hashes for 2.160.1151.0: UI `36d72e61...`,
+  scroll step `c7d7c812...`, serializers `e6fb874f...`;
+  `tools/test-powerbi-recipe.py --version 2.160.1151.0` passed. See
+  [legacy HTML](docs/reference/legacy-html.md#ok-did-nothing-in-most-legacy-dialogs-2026-11-21)
+  and [Options](docs/reference/options-dialog.md#november-21-options-was-an-empty-frame-on-hyprland).
 
 - Release RPM `0.1.0-20`, experimental DEB `0.1.0-20~experimental1` and Arch
   revision 20 with community PRs #5–#8 and the 2.160 installer port. Automatic setup

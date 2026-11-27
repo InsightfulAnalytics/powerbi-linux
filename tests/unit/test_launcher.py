@@ -36,6 +36,20 @@ class LauncherTests(unittest.TestCase):
         self.assertNotIn('PLANTED', self.run_launcher('bin'))
 
 
+class EnvironmentErrorTests(unittest.TestCase):
+    def test_a_relative_xdg_directory_is_reported_without_a_traceback(self):
+        env = dict(__import__('os').environ, XDG_DATA_HOME='relative', PYTHONPATH=str(ROOT / 'src'))
+        result = subprocess.run([sys.executable, '-m', 'pbi_linux', 'doctor'], env=env,
+                                capture_output=True, text=True, timeout=60)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn('XDG directories must be absolute', result.stderr)
+        self.assertNotIn('Traceback', result.stderr)
+
+    def test_the_session_unit_follows_the_data_directory(self):
+        with patch.dict('os.environ', {'XDG_DATA_HOME': '/tmp/pbi-unit-test'}):
+            self.assertEqual(launch.UNIT, launch.session_unit(common.Paths().data))
+
+
 class DesktopErrorTests(unittest.TestCase):
     def test_desktop_errors_are_plain_text(self):
         # A report's file name reaches the error text; zenity must not read it as markup (links).

@@ -26,7 +26,7 @@ import urllib.request
 
 ROOT=Path(__file__).resolve().parents[2]
 sys.path.insert(0,str(ROOT/'src'))
-from pbi_linux.common import Paths, Error
+from pbi_linux.common import Paths, Error, wine_env
 from pbi_linux.provision import active
 
 
@@ -43,7 +43,8 @@ def main():
     from websocket import create_connection
     installed=active(Paths())
     prefix,runtime=Path(installed['prefix']),Path(installed['runtime'])
-    env=dict(os.environ,WINEPREFIX=str(prefix),WINEDEBUG='-all')
+    # The installation's own Wine: a shell's WINESERVER or WINELOADER is dropped.
+    env=dict(wine_env(prefix),WINEDEBUG='-all')
     def page():
         for file in (prefix/'drive_c/users').glob('*/AppData/Local/Microsoft/Power BI Desktop/**/DevToolsActivePort'):
             try:
@@ -64,8 +65,10 @@ def main():
                     return reply.get('result',{}).get('result',{}).get('value')
     def probe(*args):
         r=subprocess.run([runtime/'bin/wine',probe_exe,*map(str,args)],env=env,text=True,capture_output=True,timeout=60)
-        if r.returncode and args[2]!='ping':
-            raise Error('Probe failed: '+(r.stdout.strip() or 'no output'))
+        # ping exits 1 for an unanswered message; anything else (2: the window was
+        # not found, or a dialog disables it) means the round could not be measured.
+        if r.returncode and not (args[2]=='ping' and r.returncode==1):
+            raise Error('Probe could not run %s: %s' % (args[2],r.stdout.strip() or 'no output'))
         return r.returncode,r.stdout.strip()
     def lookups():
         try:

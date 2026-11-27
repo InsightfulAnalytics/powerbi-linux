@@ -24,6 +24,21 @@ def excluded(path):
             or (path.parent == MAKEPKG and (name in ('pkg', 'src') or '.pkg.tar.' in name)))
 
 
+def archive_filter(top, root=None):
+    """A tarfile filter for an archive of the checkout under the directory top.
+
+    Drops excluded entries, and clamps modes to 0755/0644: the RPM spec installs
+    with cp -a, and modes as some mounts report them (0777) would leave the
+    installed code writable by every local user.
+    """
+    def member(info):
+        if excluded((root or ROOT) / Path(info.name).relative_to(top)):
+            return None
+        info.mode = 0o755 if info.isdir() or info.mode & 0o111 else 0o644
+        return info
+    return member
+
+
 def ignored(directory, names):
     """The shutil.copytree callback form of excluded()."""
     return [name for name in names if excluded(Path(directory) / name)]

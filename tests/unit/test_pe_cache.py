@@ -93,6 +93,44 @@ class PeCacheTests(unittest.TestCase):
         self.assertNotEqual(name, old)
         self.assertTrue(pe_cache.valid(self.source, self.cache))
 
+    def test_damaged_manifest_is_stale_not_an_exception(self):
+        pe_cache.prepare(self.source, self.cache)
+        manifest = common.read_json(self.cache / 'manifest.json')
+        for offset in ('0x600', 1.5, None):
+            with self.subTest(offset=offset):
+                manifest['sections'][0]['offset'] = offset
+                common.atomic_json(self.cache / 'manifest.json', manifest)
+                self.assertEqual(pe_cache.status(self.source, self.cache), 'stale')
+                self.assertFalse(pe_cache.refresh(self.source, self.cache))
+
+    def test_a_link_left_by_an_interrupted_refresh_is_pruned(self):
+        pe_cache.prepare(self.source, self.cache)
+        leftover = self.cache / ('.' + self.bins()[0] + '.' + 'ab' * 16)
+        leftover.write_bytes(b'x')
+        self.move_identity()
+        self.assertTrue(pe_cache.refresh(self.source, self.cache))
+        self.assertFalse(leftover.exists())
+        self.assertTrue((self.cache / 'manifest.json').exists())
+
+    def test_refresh_waits_for_another_writer(self):
+        import threading, time
+        pe_cache.prepare(self.source, self.cache)
+        self.move_identity()
+        held, release = threading.Event(), threading.Event()
+        def writer():
+            with pe_cache._locked(self.cache):
+                held.set()
+                release.wait(5)
+        thread = threading.Thread(target=writer)
+        thread.start()
+        held.wait(5)
+        threading.Timer(0.5, release.set).start()
+        started = time.monotonic()
+        self.assertTrue(pe_cache.refresh(self.source, self.cache))
+        self.assertGreaterEqual(time.monotonic() - started, 0.4)
+        thread.join()
+        self.assertTrue(pe_cache.valid(self.source, self.cache))
+
     def test_missing_manifest_is_stale(self):
         self.assertEqual(pe_cache.status(self.source, self.cache), 'stale')
         self.assertFalse(pe_cache.refresh(self.source, self.cache))

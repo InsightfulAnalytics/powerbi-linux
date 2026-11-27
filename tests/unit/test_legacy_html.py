@@ -119,10 +119,11 @@ class LegacyHtmlTests(unittest.TestCase):
     def test_scroll_bar_step_leaves_other_assemblies_unchanged(self):
         from pbi_linux import options_layout
         self.assertEqual(legacy_html._patch_sources_scroll(b'another build'), b'another build')
-        # Only 2.159.1231.0 has the step; the other builds end at the Options recipe.
+        # Only 2.159.1231.0 and 2.160.1151.0 have the step; the older builds end at the Options recipe.
         self.assertEqual(legacy_html.patched_hash('2.158.1177.0'), options_layout.PATCHED['2.158.1177.0'])
         self.assertEqual(legacy_html.patched_hash('2.159.883.0'), options_layout.PATCHED['2.159.883.0'])
         self.assertNotEqual(legacy_html.patched_hash('2.159.1231.0'), options_layout.PATCHED['2.159.1231.0'])
+        self.assertNotEqual(legacy_html.patched_hash('2.160.1151.0'), options_layout.PATCHED['2.160.1151.0'])
 
     def test_scroll_bar_step_refuses_a_resource_without_room(self):
         source, _, _, guards = self.scroll_fixture(len(legacy_html._SOURCES_SCROLL_HOOK) - 1)

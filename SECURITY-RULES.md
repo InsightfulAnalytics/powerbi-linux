@@ -36,7 +36,8 @@ Enforced by: `tests/unit/test_product.py`, "test_archive_rejects_traversal" and
 Why: patching an unknown build could break Desktop or hide a tampered file.
 Enforced by: `tests/unit/test_recipes.py`, "test_supported_builds_reject_each_others_files";
 `tests/unit/test_dialog_serializers.py`, "test_unknown_contents_are_refused";
-`tests/unit/test_autorecovery.py`, "test_unknown_script_contents_are_rejected"
+`tests/unit/test_autorecovery.py`, "test_unknown_script_contents_are_rejected";
+`tests/unit/test_desktop_config.py`, "test_verified_builds_refuse_an_unknown_configuration"
 
 ## 6. Packages are built only from main, after its checks pass, never from a pull request
 

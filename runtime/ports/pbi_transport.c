@@ -29,10 +29,16 @@ WINE_DEFAULT_DEBUG_CHANNEL(dcomp);
 #define MAX_PIXELS ((SIZE_T)7680 * 4320)
 #define MAX_SIDE 16384
 #define MAX_HOSTS 64
-/* Milliseconds a publisher waits for the consumer's copy or for another publisher,
- * and the consumer for a publisher's write. Each wait is for one memcpy. */
+/* Milliseconds a publisher waits in all for the consumer's copy and for other
+ * publishers, and the consumer for a publisher's write, for a small frame. Each
+ * wait is for one memcpy, so both grow with the frame: COPY_RATE bytes per
+ * millisecond is a slow machine's memcpy, and an 8K frame then gets 132 ms more.
+ * Wine's tick count advances in steps of up to TICK_STEP, so a deadline taken
+ * from it gets that much more, or a wait could end that much early. */
 #define PUBLISH_WAIT 50
 #define CONSUME_WAIT 8
+#define COPY_RATE ((SIZE_T)1000000)
+#define TICK_STEP 16
 struct shared_frame { LONG sequence, width, height; DWORD publisher, window; BYTE pixels[1]; };
 #define FRAME_BYTES (sizeof(struct shared_frame) + MAX_PIXELS * 4)
 struct registry { DWORD hwnds[MAX_HOSTS]; };
@@ -53,17 +59,26 @@ static BOOL frame_fits(LONG width, LONG height)
            (SIZE_T)width * height <= MAX_PIXELS;
 }
 
+/* The time left before a deadline taken from GetTickCount64, never negative. */
+static DWORD remaining(ULONGLONG deadline)
+{
+    ULONGLONG now = GetTickCount64();
+    return now < deadline ? (DWORD)(deadline - now) : 0;
+}
+
+/* v3: the frame mapping grew to the area of an 8K display. A mapping of an older
+ * runtime's size under the same name could not be mapped at the new size. */
 static void object_name(WCHAR *name, HWND hwnd, BOOL mutex)
 {
-    wsprintfW(name, mutex ? L"__pbi_dcomp_v2_lock_%08x" : L"__pbi_dcomp_v2_px_%08x",
+    wsprintfW(name, mutex ? L"__pbi_dcomp_v3_lock_%08x" : L"__pbi_dcomp_v3_px_%08x",
               (DWORD)(ULONG_PTR)hwnd);
 }
 
 static BOOL CALLBACK registry_init(INIT_ONCE *once, void *param, void **context)
 {
-    registry_mutex = CreateMutexW(NULL, FALSE, L"__pbi_dcomp_v2_registry_lock");
+    registry_mutex = CreateMutexW(NULL, FALSE, L"__pbi_dcomp_v3_registry_lock");
     registry_map = CreateFileMappingW(INVALID_HANDLE_VALUE, NULL, PAGE_READWRITE,
-                                     0, sizeof(struct registry), L"__pbi_dcomp_v2_registry");
+                                     0, sizeof(struct registry), L"__pbi_dcomp_v3_registry");
     if (registry_map) registry_view = MapViewOfFile(registry_map, FILE_MAP_WRITE, 0, 0,
                                                   sizeof(struct registry));
     if (registry_mutex && registry_view) return TRUE;
@@ -74,12 +89,12 @@ static BOOL CALLBACK registry_init(INIT_ONCE *once, void *param, void **context)
     return FALSE;
 }
 
-static BOOL register_host(HWND hwnd)
+static BOOL register_host(HWND hwnd, ULONGLONG deadline)
 {
     int i, free_slot = -1;
     BOOL found = FALSE;
     if (!InitOnceExecuteOnce(&registry_once, registry_init, NULL, NULL) ||
-        !acquire(registry_mutex, PUBLISH_WAIT))
+        !acquire(registry_mutex, remaining(deadline)))
         return FALSE;
     for (i = 0; i < MAX_HOSTS; i++)
     {
@@ -104,8 +119,8 @@ void pbi_transport_close(struct pbi_transport *transport)
     memset(transport, 0, sizeof(*transport));
 }
 
-BOOL pbi_transport_publish(struct pbi_transport *transport, HWND hwnd, HWND window,
-                           const void *pixels, UINT width, UINT height)
+static BOOL publish_until(struct pbi_transport *transport, HWND hwnd, HWND window,
+                          const void *pixels, UINT width, UINT height, ULONGLONG deadline)
 {
     struct shared_frame *frame;
     WCHAR name[64];
@@ -131,10 +146,10 @@ BOOL pbi_transport_publish(struct pbi_transport *transport, HWND hwnd, HWND wind
         if (!transport->mutex || !transport->view) { pbi_transport_close(transport); return FALSE; }
         transport->hwnd = hwnd;
     }
-    if (!register_host(hwnd) || !acquire(transport->mutex, PUBLISH_WAIT))
+    if (!register_host(hwnd, deadline) || !acquire(transport->mutex, remaining(deadline)))
     {
-        WARN("pbi-dcomp: frame dropped, lock still held after %d ms host=%p %ux%u\n",
-             PUBLISH_WAIT, hwnd, width, height);
+        WARN("pbi-dcomp: frame dropped, lock still held at the deadline host=%p %ux%u\n",
+             hwnd, width, height);
         return FALSE;
     }
     frame = transport->view;
@@ -144,6 +159,20 @@ BOOL pbi_transport_publish(struct pbi_transport *transport, HWND hwnd, HWND wind
     InterlockedIncrement(&frame->sequence);
     ReleaseMutex(transport->mutex);
     return TRUE;
+}
+
+/* The wait for one frame: the base wait plus the time a slow copy of it takes. */
+static DWORD frame_wait(DWORD base, UINT width, UINT height)
+{
+    if (!frame_fits(width, height)) return base;  /* refused before any copy */
+    return base + (DWORD)((SIZE_T)width * height * 4 / COPY_RATE);
+}
+
+BOOL pbi_transport_publish(struct pbi_transport *transport, HWND hwnd, HWND window,
+                           const void *pixels, UINT width, UINT height)
+{
+    return publish_until(transport, hwnd, window, pixels, width, height,
+                         GetTickCount64() + TICK_STEP + frame_wait(PUBLISH_WAIT, width, height));
 }
 
 struct consumer_slot
@@ -253,7 +282,7 @@ static void consume(struct consumer_slot *slot, HWND hwnd)
         if (!copy) return;
         slot->copy = copy; slot->capacity = bytes;
     }
-    if (!acquire(transport->mutex, CONSUME_WAIT)) return;
+    if (!acquire(transport->mutex, frame_wait(CONSUME_WAIT, width, height))) return;
     sequence = frame->sequence; width = frame->width; height = frame->height; publisher = frame->publisher;
     bytes = (SIZE_T)width * height * 4;
     /* Resized or retargeted since the look above: the next tick takes it. */
@@ -302,7 +331,7 @@ static void consume(struct consumer_slot *slot, HWND hwnd)
             BITMAPFILEHEADER header={0};
             DWORD written;
             HANDLE file;
-            snprintf(path,sizeof(path),"Z:%s/publisher-%08x.bmp",directory,(DWORD)(ULONG_PTR)hwnd);
+            snprintf(path,sizeof(path),"Z:%s/publisher-%08x.bmp",directory,(unsigned int)(ULONG_PTR)hwnd);
             file=CreateFileA(path,GENERIC_WRITE,0,NULL,CREATE_ALWAYS,FILE_ATTRIBUTE_NORMAL,NULL);
             if(file!=INVALID_HANDLE_VALUE)
             {
@@ -383,18 +412,21 @@ BOOL pbi_dcomp_start_consumer(void)
 
 /* Called after the D3D11 context flush, rather than from a DXGI pre-Present
  * hook. Each process publishes at most 64 live owner HWNDs. The caller holds the
- * graphics context lock, so every wait on another publisher or on the consumer
- * is bounded by PUBLISH_WAIT; none of them takes a graphics lock. */
+ * graphics context lock, so all the waits on other publishers and on the
+ * consumer share one deadline, frame_wait(PUBLISH_WAIT); none of them takes a
+ * graphics lock. */
 BOOL pbi_dcomp_publish(HWND hwnd, HWND window, const void *pixels, UINT width, UINT height, UINT pitch)
 {
     static struct pbi_transport writers[MAX_HOSTS];
     static LONG busy;
     int i, available = -1;
     BOOL result = FALSE;
+    ULONGLONG deadline;
     if (!IsWindow(hwnd) || !IsWindow(window) || !pixels || pitch != width * 4) return FALSE;
-    for (i = 0; InterlockedCompareExchange(&busy, 1, 0); ++i)
+    deadline = GetTickCount64() + TICK_STEP + frame_wait(PUBLISH_WAIT, width, height);
+    while (InterlockedCompareExchange(&busy, 1, 0))
     {
-        if (i >= PUBLISH_WAIT) return FALSE;
+        if (!remaining(deadline)) return FALSE;
         Sleep(1);
     }
     for (i = 0; i < MAX_HOSTS; ++i)
@@ -406,7 +438,7 @@ BOOL pbi_dcomp_publish(HWND hwnd, HWND window, const void *pixels, UINT width, U
     if (available >= 0)
     {
         BOOL first = !writers[available].hwnd;
-        result = pbi_transport_publish(&writers[available], hwnd, window, pixels, width, height);
+        result = publish_until(&writers[available], hwnd, window, pixels, width, height, deadline);
         if (first && result) WARN("pbi-dcomp: direct publisher pid=%lu host=%p %ux%u\n",
                                  GetCurrentProcessId(), hwnd, width, height);
     }

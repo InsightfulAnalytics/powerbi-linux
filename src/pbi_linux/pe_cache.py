@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 """Precompute readonly PE backing; identity keys match the Wine patch."""
+import contextlib
+import fcntl
 import os
 import struct
 import uuid
@@ -24,8 +26,21 @@ def webview(prefix):
     return max(files, key=version)
 
 
+@contextlib.contextmanager
+def _locked(cache):
+    """One writer at a time: prune deletes the link names a refresh is still using."""
+    with (cache / '.lock').open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
 def prepare(source, cache):
     cache.mkdir(parents=True, exist_ok=True, mode=0o700)
+    with _locked(cache):
+        _prepare(source, cache)
+
+
+def _prepare(source, cache):
     st = source.stat()
     with source.open('rb') as stream:
         header = stream.read(4096)
@@ -91,8 +106,8 @@ def _check(source, cache):
                 return None
             current.append(dict(item, file=identity(st, item['offset'], item['size'])))
         return manifest, current
-    except (Error, OSError, KeyError, TypeError):
-        return None
+    except (Error, OSError, KeyError, TypeError, ValueError):
+        return None  # A damaged manifest (an offset that is not a number) is stale too.
 
 
 def status(source, cache):
@@ -118,6 +133,14 @@ def refresh(source, cache):
     sections, and the source's hash still matches, so renaming them to the current
     identity gives what a rebuild would.
     """
+    try:
+        with _locked(cache):
+            return _refresh(source, cache)
+    except OSError:
+        return False
+
+
+def _refresh(source, cache):
     checked = _check(source, cache)
     if checked is None:
         return False
@@ -137,8 +160,11 @@ def refresh(source, cache):
 
 
 def _prune(cache, sections):
-    # Files of earlier identities or sources are never read again.
+    # Files of earlier identities or sources are never read again, nor are the
+    # link names refresh() leaves when it is stopped between link and rename.
     keep = {item['file'] for item in sections}
     for file in cache.iterdir():
-        if file.name.endswith(('.bin', '.bin.tmp')) and file.name not in keep:
+        name = file.name
+        if ((name.endswith(('.bin', '.bin.tmp')) or (name.startswith('.') and '.bin.' in name))
+                and name not in keep):
             file.unlink(missing_ok=True)

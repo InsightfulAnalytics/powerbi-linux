@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Let the Options dialog appear, in 2.159.1231.0.
+"""Let the Options dialog appear, in 2.159.1231.0 and 2.160.1151.0.
 
 A floating dialog is created fully transparent (Opacity 0, a layered window)
 and fades in when its page calls the host's onShow. ModalDialog.showDialog
@@ -16,9 +16,12 @@ import hashlib
 import struct
 from .common import Error
 
-# The complete Microsoft.Mashup.Client.UI.dll of 2.159.1231.0 after
+# The complete Microsoft.Mashup.Client.UI.dll of each build after
 # legacy_html.patch_ui, dialog_serializers.patch_ui and this module.
-UI_2159_1231_PATCHED_SHA256 = '17c4dfc2498e8efae390cb4bbcf30f5322d0323d73fcbf7ea0a5ceb96f5af080'
+UI_PATCHED_SHA256 = {
+    '2.159.1231.0': '17c4dfc2498e8efae390cb4bbcf30f5322d0323d73fcbf7ea0a5ceb96f5af080',
+    '2.160.1151.0': '36d72e618d119eb07d98da2f9dd3eeb7cd74ea70ab07e96a27feee061ae0efd0',
+}
 
 _MARKER = b'var KoOptionsDialog;\r\n(function (KoOptionsDialog) {\r\n'
 _MARKER_OFFSET, _SIZE = 513, 2296

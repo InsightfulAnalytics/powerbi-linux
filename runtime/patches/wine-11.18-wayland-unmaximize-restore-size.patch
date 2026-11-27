@@ -18,6 +18,14 @@ the size of its restored placement, as restoring it does. It is then an
 ordinary resizable window: the compositor tiles it and sends the size of the
 tile. Compositors that send no size when a window that started maximized is
 restored are served by the same change.
+Not for a configure the compositor sent before it saw the window's own
+request to be maximized: the answer to that request follows and would
+resize the window straight back. The driver sends a wl_display.sync just
+before xdg_toplevel.set_maximized, on a queue of its own; its done event
+arrives in order with the configures, so a configure handled while it is
+still outstanding was sent before the request. That queue is dispatched only
+from the configure handler, with the window data lock held, which is also
+held when the sync is created.
 Applies after wine-11.18-wayland-fixed-dialog-maximized.patch and
 wine-11.18-wayland-keep-toplevel-state.patch; without the latter a configure
 sequence without a toplevel event would be read as such a request. Wine
@@ -26,17 +34,38 @@ Wine-derived change: LGPL-2.1-or-later.
 
 --- a/dlls/winewayland.drv/window.c
 +++ b/dlls/winewayland.drv/window.c
-@@ -542,7 +542,8 @@
+@@ -279,6 +279,9 @@
+         if ((surface->window.state & WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED) &&
+            !(surface->current.state & WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED))
+         {
++            /* The sync goes first: configures sent before it is answered were
++             * sent before the compositor saw this request. */
++            wayland_surface_sync_maximize(surface);
+             xdg_toplevel_set_maximized(surface->xdg_toplevel);
+         }
+         if ((surface->window.state & WAYLAND_SURFACE_CONFIG_STATE_FULLSCREEN) &&
+@@ -542,7 +545,8 @@
      BOOL restoring_from_minimize = FALSE;
      struct wayland_win_data *data;
      RECT rect, surface_rect;
 -    BOOL fixed_dialog;
-+    BOOL fixed_dialog, restore = FALSE;
++    BOOL fixed_dialog, restore = FALSE, maximize_requested;
 +    WINDOWPLACEMENT placement = {.length = sizeof(placement)};
  
      /* Read the window before taking the window data lock: win32u calls the
       * driver with its own lock held, so the order must not be reversed. */
-@@ -677,6 +678,23 @@
+@@ -666,6 +670,10 @@
+     rect = map_rect_from_surface(surface, rect);
+     OffsetRect(&rect, data->rects.window.left, data->rects.window.top);
+ 
++    /* The compositor sent this configure before it received the window's
++     * last request to be maximized. */
++    maximize_requested = wayland_surface_maximize_pending(surface);
++
+     wayland_win_data_release(data);
+ 
+     TRACE("processing=%dx%d,%#x\n", width, height, state);
+@@ -677,6 +685,25 @@
      if (rect.left == rect.right || rect.bottom == rect.top) flags |= SWP_NOSIZE;
  
      style = NtUserGetWindowLongW(hwnd, GWL_STYLE);
@@ -45,8 +74,10 @@ Wine-derived change: LGPL-2.1-or-later.
 +     * the size to the window. Use the size of its restored placement, as a
 +     * restore does. At the size it had while maximized the window would still
 +     * cover its monitor: it would count as fullscreen, be announced with a
-+     * fixed size, and a tiling compositor maps such a window floating. */
-+    if ((flags & SWP_NOSIZE) && (style & WS_MAXIMIZE) &&
++     * fixed size, and a tiling compositor maps such a window floating.
++     * Not while the window's own request to be maximized is unanswered: the
++     * compositor's answer follows and would resize it straight back. */
++    if ((flags & SWP_NOSIZE) && (style & WS_MAXIMIZE) && !maximize_requested &&
 +        !(state & (WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED |
 +                   WAYLAND_SURFACE_CONFIG_STATE_FULLSCREEN)) &&
 +        NtUserGetWindowPlacement(hwnd, &placement) &&
@@ -60,7 +91,7 @@ Wine-derived change: LGPL-2.1-or-later.
      if (!(state & WAYLAND_SURFACE_CONFIG_STATE_MAXIMIZED) != !(style & WS_MAXIMIZE)
          && !(state & WAYLAND_SURFACE_CONFIG_STATE_FULLSCREEN))
          NtUserSetWindowLong(hwnd, GWL_STYLE, style ^ WS_MAXIMIZE, FALSE);
-@@ -692,7 +710,13 @@
+@@ -692,7 +719,13 @@
          flags |= SWP_NOSENDCHANGING;
      }
  
@@ -75,3 +106,156 @@ Wine-derived change: LGPL-2.1-or-later.
  }
  
  /**********************************************************************
+--- a/dlls/winewayland.drv/waylanddrv.h
++++ b/dlls/winewayland.drv/waylanddrv.h
+@@ -304,6 +304,8 @@
+     struct wayland_surface_config pending, requested, processing, current;
+     /* Whether an xdg_toplevel.configure arrived in the current sequence. */
+     BOOL pending_toplevel;
++    /* A wl_display.sync sent just before xdg_toplevel.set_maximized. */
++    struct wayland_maximize_sync *maximize_sync;
+     BOOL resizing;
+     struct wayland_window_config window;
+     int content_width, content_height;
+@@ -330,6 +332,8 @@
+ 
+ struct wayland_surface *wayland_surface_create(HWND hwnd);
+ void wayland_surface_destroy(struct wayland_surface *surface);
++void wayland_surface_sync_maximize(struct wayland_surface *surface);
++BOOL wayland_surface_maximize_pending(struct wayland_surface *surface);
+ void wayland_surface_make_toplevel(struct wayland_surface *surface);
+ void wayland_surface_make_subsurface(struct wayland_surface *surface,
+                                      struct wayland_surface *parent);
+--- a/dlls/winewayland.drv/wayland_surface.c
++++ b/dlls/winewayland.drv/wayland_surface.c
+@@ -25,6 +25,7 @@
+ #include "config.h"
+ 
+ #include <assert.h>
++#include <pthread.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+ 
+@@ -263,6 +264,114 @@
+  *
+  * Destroys a wayland surface.
+  */
++/* A sync sent just before a request to be maximized. Its done event arrives,
++ * in order with the configure events, after every configure the compositor
++ * sent before it saw the request. The callback lives on a queue of its own
++ * that only wayland_surface_maximize_pending dispatches, from a configure
++ * handler, so the result is known exactly when a configure is handled. A
++ * surface that goes away first leaves the sync to its done handler. */
++struct wayland_maximize_sync
++{
++    struct wl_callback *callback;
++    BOOL done, orphaned;
++};
++
++static pthread_mutex_t maximize_mutex = PTHREAD_MUTEX_INITIALIZER;
++static pthread_once_t maximize_once = PTHREAD_ONCE_INIT;
++static struct wl_event_queue *maximize_queue;
++
++static void maximize_queue_init(void)
++{
++    maximize_queue = wl_display_create_queue(process_wayland.wl_display);
++}
++
++static void maximize_sync_free(struct wayland_maximize_sync *sync)
++{
++    wl_callback_destroy(sync->callback);
++    free(sync);
++}
++
++static void maximize_sync_done(void *data, struct wl_callback *callback, uint32_t time)
++{
++    struct wayland_maximize_sync *sync = data;
++
++    pthread_mutex_lock(&maximize_mutex);
++    sync->done = TRUE;
++    if (sync->orphaned) maximize_sync_free(sync);
++    pthread_mutex_unlock(&maximize_mutex);
++}
++
++static const struct wl_callback_listener maximize_sync_listener =
++{
++    maximize_sync_done
++};
++
++static void wayland_surface_release_maximize_sync(struct wayland_surface *surface)
++{
++    struct wayland_maximize_sync *sync = surface->maximize_sync;
++
++    if (!sync) return;
++    surface->maximize_sync = NULL;
++    pthread_mutex_lock(&maximize_mutex);
++    if (sync->done) maximize_sync_free(sync);
++    else sync->orphaned = TRUE;
++    pthread_mutex_unlock(&maximize_mutex);
++}
++
++/**********************************************************************
++ *          wayland_surface_sync_maximize
++ *
++ * Mark the configures the compositor sends before it receives the request
++ * to be maximized that the caller sends next. Called with the window data
++ * lock held; a sync still unanswered serves a repeated request.
++ */
++void wayland_surface_sync_maximize(struct wayland_surface *surface)
++{
++    struct wayland_maximize_sync *sync;
++    struct wl_display *wrapper;
++
++    if (surface->maximize_sync) return;
++    pthread_once(&maximize_once, maximize_queue_init);
++    if (!maximize_queue || !(sync = calloc(1, sizeof(*sync)))) return;
++    if (!(wrapper = wl_proxy_create_wrapper(process_wayland.wl_display)))
++    {
++        free(sync);
++        return;
++    }
++    wl_proxy_set_queue((struct wl_proxy *)wrapper, maximize_queue);
++    sync->callback = wl_display_sync(wrapper);
++    wl_proxy_wrapper_destroy(wrapper);
++    if (!sync->callback)
++    {
++        free(sync);
++        return;
++    }
++    /* Only wayland_surface_maximize_pending dispatches this queue, with the
++     * window data lock held, as it is here: no event can precede the listener. */
++    wl_callback_add_listener(sync->callback, &maximize_sync_listener, sync);
++    surface->maximize_sync = sync;
++}
++
++/**********************************************************************
++ *          wayland_surface_maximize_pending
++ *
++ * Whether the configure being handled was sent before the compositor saw
++ * the last request to be maximized. Called with the window data lock held,
++ * from a configure handler.
++ */
++BOOL wayland_surface_maximize_pending(struct wayland_surface *surface)
++{
++    BOOL done;
++
++    if (!surface->maximize_sync) return FALSE;
++    wl_display_dispatch_queue_pending(process_wayland.wl_display, maximize_queue);
++    pthread_mutex_lock(&maximize_mutex);
++    done = surface->maximize_sync->done;
++    pthread_mutex_unlock(&maximize_mutex);
++    if (done) wayland_surface_release_maximize_sync(surface);
++    return !done;
++}
++
+ void wayland_surface_destroy(struct wayland_surface *surface)
+ {
+     pthread_mutex_lock(&process_wayland.pointer.mutex);
+@@ -494,6 +603,7 @@
+ 
+     memset(&surface->pending, 0, sizeof(surface->pending));
+     surface->pending_toplevel = FALSE;
++    wayland_surface_release_maximize_sync(surface);
+     memset(&surface->requested, 0, sizeof(surface->requested));
+     memset(&surface->processing, 0, sizeof(surface->processing));
+     memset(&surface->current, 0, sizeof(surface->current));

@@ -157,7 +157,8 @@ frozen. Closing the frame with the window manager released Desktop.
 the deferred tick the original code used, followed by the maximized-state
 callback that came with it. Auto-size stays off. The change is a guarded,
 in-place edit of the Options dialog script, found by a unique marker and its
-.NET length prefix, for 2.159.1231.0 only; `pbi-linux doctor` reports it as
+.NET length prefix, for 2.159.1231.0 and 2.160.1151.0 (the Options recipe
+leaves the same script in both); `pbi-linux doctor` reports it as
 `options-dialog`.
 
 ### Evidence
@@ -168,6 +169,8 @@ in-place edit of the Options dialog script, found by a unique marker and its
 | Resize the dialog through the compositor to 1000 x 760 | Not tried: nothing was visible | Window and content followed the new size |
 | OK with no changes | Not reachable | Dialog closed and the main window was enabled again |
 | `tools/test-powerbi-recipe.py --version 2.159.1231.0` | | Passed, same length |
+| 2.160.1151.0, File > Options and settings > Options, Hyprland headless output | Extended style `0x90100` (`WS_EX_LAYERED`); OK did nothing | Extended style `0x10100`, content in the committed buffer; OK closed it |
+| `tools/test-powerbi-recipe.py --version 2.160.1151.0` | | Passed, same length |
 
 Limits:
 
