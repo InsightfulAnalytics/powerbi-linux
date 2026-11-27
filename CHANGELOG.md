@@ -4,6 +4,17 @@
 
 ### Unreleased — product repository and upstream review
 
+- Show report numbers and symbols as Windows does (runtime 0.1.7-local.11).
+  Three Wine patches: `wine-11.18-oleaut32-format-scaling.patch` makes a
+  trailing comma in a number format divide by 1000, so DAX `FORMAT(x,
+  "$#,0,K")` gives `$4,376K` instead of `$4,376,023K`, and rounds 0.6 with
+  format "0" to 1; `wine-11.18-oledb32-variant-currency.patch` lets MSOLAP
+  convert its VARIANT cells to currency, so Fixed Decimal measures no longer
+  reach visuals as 0 (a card showed `$0K`); `wine-11.18-dwrite-symbol-fallback.patch`
+  gives Geometric Shapes (▲ ▼), box drawing, block elements and the other
+  blocks Windows covers with Segoe UI Symbol a fallback font, so they no
+  longer render as boxes. `tools/test-number-format.py` checks the first two.
+
 - Release RPM `0.1.0-20`, experimental DEB `0.1.0-20~experimental1` and Arch
   revision 20 with community PRs #5–#8 and the 2.160 installer port. Automatic setup
   pins the published, verified 0.1.7-pr-integration.1 runtime containing the Wine
